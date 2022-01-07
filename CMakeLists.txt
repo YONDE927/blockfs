@@ -7,5 +7,4 @@ IF (WIN32)
 	find_package(libssh CONFIG REQUIRED)
 	target_link_libraries(${PROJECT_NAME} PRIVATE ssh)
 ELSE()
-  # set stuff for other systems
 ENDIF()
