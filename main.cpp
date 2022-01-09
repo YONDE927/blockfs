@@ -1,9 +1,13 @@
 #include <iostream>
+#include <libssh/libssh.h>
 
 class sftp {
 private:
-	int a;
-	int b;
+	ssh_session ssh;
+public:
+	sftp(){
+		
+	}
 };
 
 
