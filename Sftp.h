@@ -5,13 +5,14 @@
 #include <string>
 #include <filesystem>
 #include <list>
+#include <fcntl.h>
 
 struct Stat {
 	std::string name;
 	int size;
 	int mtime;
-	int ctime;
-}
+	int atime;
+};
 
 
 class sftp {
@@ -23,8 +24,8 @@ private:
 public:
 	sftp();
 	~sftp();
-	Stat getstat(string path);
-	list<Stat> getdir(string path);
-	int download(string from,string dest);
-	int upload(string from,string dest);
+	Stat getstat(std::string path);
+	std::list<Stat> getdir(std::string path);
+	int download(std::string from,std::string dest);
+	int upload(std::string from,std::string dest);
 };
