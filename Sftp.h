@@ -6,14 +6,12 @@
 #include <filesystem>
 #include <list>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 struct Stat {
 	std::string name;
-	int size;
-	int mtime;
-	int atime;
+	struct stat st;
 };
-
 
 class sftp {
 private:
@@ -26,6 +24,7 @@ public:
 	~sftp();
 	Stat getstat(std::string path);
 	std::list<Stat> getdir(std::string path);
-	int download(std::string from,std::string dest);
-	int upload(std::string from,std::string dest);
+	int download(std::string path,char* buf,int offset,int size);
+	int fulldownload(std::string from, std::string dest);
+	int upload(std::string path,char* buf,int offset,int size);
 };

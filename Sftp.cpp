@@ -2,9 +2,11 @@
 
 void convert_sf_to_St(std::string path,sftp_attributes sfbuf,Stat &stat){
 	stat.name = path;
-	stat.size = sfbuf->size;
-	stat.mtime = sfbuf->mtime;
-	stat.atime = sfbuf->atime;
+	stat.st.st_size = sfbuf->size;
+	stat.st.st_mtime = sfbuf->mtime;
+	stat.st.st_atime = sfbuf->atime;
+	stat.st.st_uid = sfbuf->uid;
+	stat.st.st_gid = sfbuf->gid;
 }
 
 int sftp::loadoption(){
@@ -95,7 +97,7 @@ std::list<Stat> sftp::getdir(std::string path){
 	return attrs;
 }
 
-int sftp::download(std::string from, std::string dest){
+int sftp::fulldownload(std::string from, std::string dest){
 	sftp_file file;
 	int nbytes,size=0;
 	std::ofstream ofs;
@@ -119,4 +121,41 @@ int sftp::download(std::string from, std::string dest){
 		size += nbytes;
 	}
 	return size;
+}
+
+int sftp::download(std::string path,char* buf,int offset,int size){
+	sftp_file file;
+	int nbytes;
+	file = sftp_open(m_sftp,path.c_str(), O_RDONLY,0);
+	if(sftp_seek(file, offset)<0){
+		std::cerr << "sftp_seek error" << std::endl;
+		sftp_close(file);
+		return -1;
+	}
+	nbytes = sftp_read(file,buf,size);
+	if(nbytes<0){
+		std::cerr << "sftp_read error" << std::endl;
+		sftp_close(file);
+		return -1;
+	}
+	sftp_close(file);
+	return nbytes;
+}
+
+int sftp::upload(std::string path,char* buf,int offset,int size){
+	sftp_file file;
+	int nbytes;
+	file = sftp_open(m_sftp,path.c_str(),O_WRONLY,0);
+	if(sftp_seek(file, offset)<0){
+		std::cerr << "sftp_seek error" << std::endl;
+		sftp_close(file);
+		return -1;
+	}
+	nbytes = sftp_write(file,buf,size);
+	if(nbytes<0){
+		std::cerr << "sftp_write error" << std::endl;
+		sftp_close(file);
+		return -1;
+	}
+	return nbytes;
 }
