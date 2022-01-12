@@ -24,23 +24,28 @@ public:
 };
 
 class entry {
-private:
+protected:
 	std::string path;
 	int offset;
 	attribute* stat;
 	sftp* p_sftp;
+	std::string *sftproot;
 public:
-	entry(std::string path);
+	entry(std::string _path,std::string *_sftproot,sftp *_p_sftp);
+	entry(std::string _path,struct stat &_st,std::string *_sftproot,sftp *_p_sftp);
 	~entry();
 };
 
+//いつstatのリストを取得して、entryを生成するか。
+//entryをここでnewして、managerの方でdeleteしてもよいのか。なんか危なそう。
 class directory: public entry{
 private:
-	std::list<entry> entries;
+	std::list<entry*> entries;
 public:
-	directory();
+	directory(std::string _path,std::string *_sftproot,sftp *_p_sftp);
+	directory(std::string _path,struct stat &_st,std::string *_sftproot,sftp *_p_sftp);
 	~directory();
-	int readdir(std::list<struct stat> &stbufs);
+	std::list<entry*> readdir();
 };
 
 #endif

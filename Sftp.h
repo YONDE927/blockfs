@@ -1,3 +1,6 @@
+#ifndef BSFTP_H
+#define BSFTP_H
+
 #include <iostream>
 #include <fstream>
 #include <libssh/libssh.h>
@@ -28,3 +31,5 @@ public:
 	int fulldownload(std::string from, std::string dest);
 	int upload(std::string path,char* buf,int offset,int size);
 };
+
+#endif
