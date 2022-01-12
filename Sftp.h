@@ -13,12 +13,13 @@
 
 struct Stat {
 	std::string name;
+	std::string path;
 	struct stat st;
 };
 
 class sftp {
 private:
-	std::string ConfigPath,host,username,password;
+	std::string ConfigPath,host,username,password,sftproot;
 	ssh_session m_ssh;
 	sftp_session m_sftp;
 	int loadoption();

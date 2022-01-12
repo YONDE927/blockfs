@@ -1,7 +1,9 @@
 #include "Sftp.h"
 
 void convert_sf_to_St(std::string path,sftp_attributes sfbuf,Stat &stat){
-	stat.name = path;
+	std::filesystem::path p = path;
+	stat.name = p.filename();
+	stat.path = path;
 	stat.st.st_size = sfbuf->size;
 	stat.st.st_mtime = sfbuf->mtime;
 	stat.st.st_atime = sfbuf->atime;
@@ -27,13 +29,15 @@ int sftp::loadoption(){
 			username = line.substr(index+1);
 		}else if(key=="password"){
 			password = line.substr(index+1);
+		}else if(key=="sftproot"){
+			sftproot = line.substr(index+1);
 		}
 	}
 	return 0;
 }
 
 sftp::sftp(){
-	if(loadoption()!=0){
+	if(this->loadoption()!=0){
 		std::cerr << "loadoption failed: " << ssh_get_error(m_ssh) << std::endl;
 	}
 	m_ssh = ssh_new();
@@ -66,9 +70,10 @@ sftp::~sftp(){
 Stat sftp::getstat(std::string path){
 	Stat attr;
 	sftp_attributes sfbuf;
-	sfbuf = sftp_stat(m_sftp,path.c_str());
+	std::string p = sftproot + path;
+	sfbuf = sftp_stat(m_sftp,p.c_str());
 	if(!sfbuf){
-		std::cerr << "sftp_stat failed" << std::endl;
+		std::cerr << "sftp_stat failed: " << p << std::endl;
 	}
 	std::cout << "sftp_stat success" << std::endl;
 	convert_sf_to_St(path,sfbuf,attr);
@@ -81,14 +86,15 @@ std::list<Stat> sftp::getdir(std::string path){
 	Stat attr;
 	sftp_attributes sfbuf;
 	sftp_dir dir;
-	dir = sftp_opendir(m_sftp,path.c_str());
+	std::string p = sftproot + path + "/";
+	dir = sftp_opendir(m_sftp,p.c_str());
 	if(!dir){
 		std::cerr << "getdir open " << path << " failed" << std::endl;
 		return attrs; 
 	}
-	sfbuf=sftp_readdir(m_sftp,dir);
+	sfbuf=sftp_readdir(m_sftp,dir);	
 	while(sfbuf!=NULL){
-		convert_sf_to_St(sfbuf->name,sfbuf,attr);
+		convert_sf_to_St(p+sfbuf->name,sfbuf,attr);
 		attrs.push_back(attr);
 		sftp_attributes_free(sfbuf);
 		sfbuf=sftp_readdir(m_sftp,dir);
@@ -102,7 +108,8 @@ int sftp::fulldownload(std::string from, std::string dest){
 	int nbytes,size=0;
 	std::ofstream ofs;
 	char buffer[512];
-	file = sftp_open(m_sftp,from.c_str(), O_RDONLY,0);
+	std::string pf = sftproot + from;
+	file = sftp_open(m_sftp,pf.c_str(), O_RDONLY,0);
 	ofs.open(dest,std::ios_base::out|std::ios_base::binary|std::ios_base::trunc);
 	for(;;){
 		nbytes = sftp_read(file,buffer,sizeof(buffer));
@@ -126,7 +133,8 @@ int sftp::fulldownload(std::string from, std::string dest){
 int sftp::download(std::string path,char* buf,int offset,int size){
 	sftp_file file;
 	int nbytes;
-	file = sftp_open(m_sftp,path.c_str(), O_RDONLY,0);
+	std::string p = sftproot + path;
+	file = sftp_open(m_sftp,p.c_str(), O_RDONLY,0);
 	if(sftp_seek(file, offset)<0){
 		std::cerr << "sftp_seek error" << std::endl;
 		sftp_close(file);
@@ -145,7 +153,8 @@ int sftp::download(std::string path,char* buf,int offset,int size){
 int sftp::upload(std::string path,char* buf,int offset,int size){
 	sftp_file file;
 	int nbytes;
-	file = sftp_open(m_sftp,path.c_str(),O_WRONLY,0);
+	std::string p = sftproot + path;
+	file = sftp_open(m_sftp,p.c_str(),O_WRONLY,0);
 	if(sftp_seek(file, offset)<0){
 		std::cerr << "sftp_seek error" << std::endl;
 		sftp_close(file);
