@@ -14,5 +14,10 @@ ENDIF()
 
 add_library(sftp STATIC Sftp.cpp)
 target_link_libraries(sftp PRIVATE ssh)
+
+add_library(block STATIC Block.cpp)
+
+add_library(entry STATIC Entry.cpp)
+
 add_executable(${PROJECT_NAME} main.cpp)
-target_link_libraries(${PROJECT_NAME} sftp)
+target_link_libraries(${PROJECT_NAME} sftp block entry)
