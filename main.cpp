@@ -1,7 +1,6 @@
 #include "Sftp.h"
 #include "Block.h"
 
-#define DEST "/home/yonde/Documents/blockfs/build/sample"
 #define PATH "hello/hello.c"
 
 void printstat(Stat &st);
@@ -39,7 +38,7 @@ int test_sftp(){
 		printstat(*itr);
 	}
 	//fulldownload
-	p_connector->fulldownload(PATH, DEST);
+	//p_connector->fulldownload(PATH, DEST);
 	char buffer[8];
 	//download
 	p_connector->download(PATH,buffer,2,8);
