@@ -23,6 +23,7 @@ public:
 	attribute(sftp* _p_sftp,std::string _path,struct stat &_st);
 	~attribute();
 	struct stat* getattr();
+	void print();
 	int download();
 };
 
@@ -35,22 +36,25 @@ protected:
 public:
 	entry(std::string _path,sftp *_p_sftp);
 	entry(std::string _path,struct stat &_st,sftp *_p_sftp);
-	~entry();
+	struct stat* getattr();
+	virtual ~entry();
 };
 
-//いつstatのリストを取得して、entryを生成するか。
 class directory: public entry{
 private:
-	std::list<entry*> entries;
+	std::list<attribute*> attrs;
 public:
-	using entry::entry;
-	std::list<entry*> readdir();
+	directory(std::string _path,sftp *_p_sftp);
+	directory(std::string _path,struct stat &_st,sftp *_p_sftp);
+	~directory();
+	std::list<attribute*> readdir();
+	void ls();
 	void download();
 };
 
 class file: public entry{
 private:
-	std::vector<block *> blocks;
+	std::vector<block*> blocks;
 	bool haveAll;
 	bool fd;
 	int lock;
@@ -60,6 +64,7 @@ public:
 	~file();
 	bool isopen();
 	int open();
+	int close();
 	int read(char* buf,int offset,int size);
 	int write(char* buf,int offset,int size);
 };

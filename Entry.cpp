@@ -34,6 +34,10 @@ struct stat* attribute::getattr(){
 	return st;
 }
 
+void attribute::print(){
+	std::cout << path << " " << name << " " << st->st_size << std::endl;
+}
+
 //entry
 entry::entry(std::string _path,sftp *_p_sftp){
 	path=_path;
@@ -49,30 +53,56 @@ entry::entry(std::string _path,struct stat &_st,sftp *_p_sftp){
 	stat=new attribute(p_sftp,path,_st);
 }
 
+struct stat* entry::getattr(){
+	return stat->getattr();
+}
+
 entry::~entry(){
 	delete stat;
 }
 
 //directory
-std::list<entry*> directory::readdir(){
+directory::directory(std::string _path,sftp *_p_sftp):entry(_path,_p_sftp){
 	this->download();
-	return entries;
+}
+
+directory::directory(std::string _path,struct stat &_st,sftp *_p_sftp):entry(_path,_st,_p_sftp){
+	this->download();
+}
+
+directory::~directory(){
+	std::list<attribute*>::iterator itr = attrs.begin();
+	for(;itr!=attrs.end();++itr){
+		delete *itr;
+	}
+}
+
+std::list<attribute*> directory::readdir(){
+	return attrs;
+}
+
+void directory::ls(){
+	std::list<attribute*>::iterator itr = attrs.begin();
+	for(;itr!=attrs.end();++itr){
+		(*itr)->print();
+	}
 }
 
 void directory::download(){
 	std::list<Stat> stbufs;
-	std::list<Stat>::iterator itr = stbufs.begin();
 	std::string p;
-	entry *et;
+	attribute *at;
 	stbufs=p_sftp->getdir(path);
+	std::list<Stat>::iterator itr = stbufs.begin();
 	for(;itr!=stbufs.end();++itr){
-		p = path + itr->name;
-		if(S_ISDIR(itr->st.st_mode)){
-			et = new directory(p,p_sftp);
-		}else if(S_ISREG(itr->st.st_mode)){
-			et = new file(p,p_sftp);
-		}
-		entries.push_back(et);
+		p = path + "/" + itr->name;
+		at = new attribute(p_sftp,p,itr->st);
+		// if(S_ISDIR(itr->st.st_mode)){
+		// 	et = new directory(p,p_sftp);
+		// }else if(S_ISREG(itr->st.st_mode)){
+		// 	et = new file(p,p_sftp);
+		// }
+		attrs.push_back(at);
 	}
 }
 
@@ -83,7 +113,8 @@ file::file(std::string _path,sftp *_p_sftp): entry(_path,_p_sftp){
 	haveAll = false;
 	fd = false;
 	block_num = (stat->getattr()->st_size / BLOCK_SIZE) + 1;
-	for(int i;i<block_num;i++){
+	std::cout << "block_num " << block_num << std::endl;
+	for(int i=0;i<block_num;i++){
 		b = new block(p_sftp,&path,i);
 		blocks.push_back(b);
 	}
@@ -94,15 +125,16 @@ file::file(std::string _path,struct stat &_st,sftp *_p_sftp): entry(_path,_st,_p
 	block *b;
 	haveAll = false;
 	fd = false;
-	block_num = (stat->getattr()->st_size / BLOCK_SIZE) + 1;
+	block_num = (_st.st_size / BLOCK_SIZE) + 1;
 	for(int i;i<block_num;i++){
 		b = new block(p_sftp,&path,i);
 		blocks.push_back(b);
 	}
+	std::cout << "blocks.size" << blocks.size() << std::endl;
 }
 
 file::~file(){
-	std::vector<block *>::iterator itr;
+	std::vector<block*>::iterator itr;
 	for(itr=blocks.begin();itr!=blocks.end();++itr){
 		delete *itr;
 	}
@@ -117,7 +149,15 @@ int file::open(){
 	return 0;
 }
 
+int file::close(){
+	fd = false;
+	return 0;
+}
+
 int file::read(char* buf,int offset,int size){
+	if(!fd){
+		return -1;
+	}
 	//find first block
 	int ind = offset / BLOCK_SIZE;
 	int nread;
@@ -139,15 +179,17 @@ int file::read(char* buf,int offset,int size){
 		size-=nread;
 		ind++;
 	}
-	std::cout << "file.read() success: " << oread-size << "byte read" << std::endl;
 	return oread - size;
 }
 
 int file::write(char* buf,int offset,int size){
+	if(!fd){
+		return -1;
+	}
 	//find first block
 	int ind = offset / BLOCK_SIZE;
-	int nwritten;
-	int owritten;
+	int nwritten{0};
+	int owritten=size;
 	int block_offset = offset % BLOCK_SIZE;
 	while(size>0){
 		if(ind>=blocks.size()){
@@ -156,7 +198,7 @@ int file::write(char* buf,int offset,int size){
 		if(size>(BLOCK_SIZE-block_offset)){
 			nwritten=blocks[ind]->write(buf,block_offset,BLOCK_SIZE-block_offset);
 			if(block_offset>0){
-				block_offset=0;	
+				block_offset=0;
 			}
 		}else{
 			nwritten=blocks[ind]->write(buf,block_offset,size);
@@ -165,4 +207,5 @@ int file::write(char* buf,int offset,int size){
 		size-=nwritten;
 		ind++;
 	}
+	return owritten - size;
 }

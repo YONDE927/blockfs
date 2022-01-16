@@ -31,7 +31,7 @@ int block::download(){
 int block::upload(){
 	int offset,nwritten;
 	offset=BLOCK_SIZE*index;
-	nwritten=p_sftp->upload(*p_path,data,offset,BLOCK_SIZE);
+	nwritten=p_sftp->upload(*p_path,data,offset,sizeof(data));
 	if(nwritten<=0){
 		std::cerr << "sftp->upload fail" << std::endl;
 		return -1;
@@ -41,15 +41,16 @@ int block::upload(){
 }
 
 int block::read(char* buf,int offset,int size){
+	int dsize;
 	if(data==NULL){
-		this->download();
+		dsize = this->download();
 	}
 	if(offset>BLOCK_SIZE){
 		std::cerr << "offset over BLOCK_SIZE" << std::endl;
 		return -1;
 	}
 	memcpy(buf,data+offset,size);
-	return 0;
+	return size;
 }
 
 int block::write(char* buf,int offset,int size){
@@ -61,5 +62,6 @@ int block::write(char* buf,int offset,int size){
 		return -1;
 	}
 	memcpy(data+offset,buf,size);
-	return 0;
+	this->upload();
+	return size;
 }

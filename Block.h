@@ -10,7 +10,7 @@
 #include <string.h>
 #include "Sftp.h"
 
-#define BLOCK_SIZE 512
+#define BLOCK_SIZE 32
 
 class block {
 private:
