@@ -24,14 +24,18 @@ attribute::~attribute(){
 }
 
 int attribute::download(){
+	int ec;
 	Stat stbuf;
-	stbuf = p_sftp->getstat(path);
+	ec = p_sftp->getstat(path,stbuf);
+	if(ec<0){
+		return -1;
+	}
 	*st = stbuf.st;
 	return 0;
 }
 
-struct stat* attribute::getattr(){
-	return st;
+struct stat attribute::getattr(){
+	return *st;
 }
 
 void attribute::print(){
@@ -43,6 +47,7 @@ entry::entry(std::string _path,sftp *_p_sftp){
 	path=_path;
 	p_sftp=_p_sftp;
 	offset=0;
+	flag=0;
 	stat=new attribute(p_sftp,path);
 }
 
@@ -50,10 +55,11 @@ entry::entry(std::string _path,struct stat &_st,sftp *_p_sftp){
 	path=_path;
 	p_sftp=_p_sftp;
 	offset=0;
+	flag=0;
 	stat=new attribute(p_sftp,path,_st);
 }
 
-struct stat* entry::getattr(){
+struct stat entry::getattr(){
 	return stat->getattr();
 }
 
@@ -63,10 +69,12 @@ entry::~entry(){
 
 //directory
 directory::directory(std::string _path,sftp *_p_sftp):entry(_path,_p_sftp){
+	flag=2;
 	this->download();
 }
 
 directory::directory(std::string _path,struct stat &_st,sftp *_p_sftp):entry(_path,_st,_p_sftp){
+	flag=2;
 	this->download();
 }
 
@@ -112,12 +120,12 @@ file::file(std::string _path,sftp *_p_sftp): entry(_path,_p_sftp){
 	block *b;
 	haveAll = false;
 	fd = false;
-	block_num = (stat->getattr()->st_size / BLOCK_SIZE) + 1;
-	std::cout << "block_num " << block_num << std::endl;
+	block_num = (stat->getattr().st_size / BLOCK_SIZE) + 1;
 	for(int i=0;i<block_num;i++){
 		b = new block(p_sftp,&path,i);
 		blocks.push_back(b);
 	}
+	flag=1;
 }
 
 file::file(std::string _path,struct stat &_st,sftp *_p_sftp): entry(_path,_st,_p_sftp){
@@ -131,6 +139,7 @@ file::file(std::string _path,struct stat &_st,sftp *_p_sftp): entry(_path,_st,_p
 		blocks.push_back(b);
 	}
 	std::cout << "blocks.size" << blocks.size() << std::endl;
+	flag=1;
 }
 
 file::~file(){
@@ -182,7 +191,7 @@ int file::read(char* buf,int offset,int size){
 	return oread - size;
 }
 
-int file::write(char* buf,int offset,int size){
+int file::write(const char* buf,int offset,int size){
 	if(!fd){
 		return -1;
 	}

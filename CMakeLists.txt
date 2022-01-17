@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.22.1)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_FLAGS "-Wall -ggdb")
+
 
 IF (WIN32)
 	set(CMAKE_TOOLCHAIN_FILE "C:/Users/svyut/vcpkg/scripts/buildsystems/vcpkg.cmake")
@@ -18,6 +20,12 @@ target_link_libraries(sftp PRIVATE ssh)
 add_library(block STATIC Block.cpp)
 
 add_library(entry STATIC Entry.cpp)
+target_link_libraries(entry PRIVATE block)
 
-add_executable(${PROJECT_NAME} main.cpp)
-target_link_libraries(${PROJECT_NAME} sftp block entry)
+add_library(manager STATIC Manager.cpp)
+
+add_executable(test test.cpp)
+target_link_libraries(test sftp entry manager)
+
+add_executable(${PROJECT_NAME} blockfs.cpp)
+target_link_libraries(${PROJECT_NAME} fuse3 sftp entry manager)

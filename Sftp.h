@@ -11,9 +11,13 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+
+std::string add_path(std::string root,std::string path);
+
 struct Stat {
 	std::string name;
 	std::string path;
+	int type;
 	struct stat st;
 };
 
@@ -26,7 +30,7 @@ private:
 public:
 	sftp();
 	~sftp();
-	Stat getstat(std::string path);
+	int getstat(std::string path,Stat &attr);
 	std::list<Stat> getdir(std::string path);
 	int download(std::string path,char* buf,int offset,int size);
 	int fulldownload(std::string from, std::string dest);

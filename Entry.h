@@ -22,7 +22,7 @@ public:
 	attribute(sftp* _p_sftp,std::string _path);
 	attribute(sftp* _p_sftp,std::string _path,struct stat &_st);
 	~attribute();
-	struct stat* getattr();
+	struct stat getattr();
 	void print();
 	int download();
 };
@@ -33,10 +33,11 @@ protected:
 	int offset;
 	attribute* stat;
 	sftp* p_sftp;
+	int flag;
 public:
 	entry(std::string _path,sftp *_p_sftp);
 	entry(std::string _path,struct stat &_st,sftp *_p_sftp);
-	struct stat* getattr();
+	struct stat getattr();
 	virtual ~entry();
 };
 
@@ -66,7 +67,7 @@ public:
 	int open();
 	int close();
 	int read(char* buf,int offset,int size);
-	int write(char* buf,int offset,int size);
+	int write(const char* buf,int offset,int size);
 };
 
 #endif

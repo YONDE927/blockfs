@@ -1,5 +1,7 @@
 #include "Sftp.h"
 
+#define CONFIGPATH "/home/yonde/Documents/blockfs/build/config/sshconfig"
+
 void convert_sf_to_St(std::string path,sftp_attributes sfbuf,Stat &stat){
 	std::filesystem::path p = path;
 	stat.name = p.filename();
@@ -9,12 +11,33 @@ void convert_sf_to_St(std::string path,sftp_attributes sfbuf,Stat &stat){
 	stat.st.st_atime = sfbuf->atime;
 	stat.st.st_uid = sfbuf->uid;
 	stat.st.st_gid = sfbuf->gid;
+	stat.type = sfbuf->type;
+}
+
+std::string add_path(std::string root,std::string path){
+	auto p1=root;
+	auto p2=path;
+	if(root.back() =='/'){
+		p1 = root.substr(0,root.size()-2);
+	}
+	if(path.front() == '/'){
+		if(path.size()==1){
+			return p1;
+		}else{
+			p2 = path.substr(1,path.size()-1);
+		}
+	}
+	if(path.back() == '/'){
+		p2 = path.substr(0,path.size()-2);
+	}
+	return p1 + "/" + p2;
 }
 
 int sftp::loadoption(){
 	int index;
 	std::string line,key;
-	ConfigPath = std::filesystem::current_path().string() + "/config/sshconfig";
+	//ConfigPath = std::filesystem::current_path().string() + "/config/sshconfig";
+	ConfigPath = CONFIGPATH;
 	std::ifstream ifs;
 	ifs.open(ConfigPath);
 	if(!ifs){
@@ -67,18 +90,16 @@ sftp::~sftp(){
 	ssh_free(m_ssh);
 }
 
-Stat sftp::getstat(std::string path){
-	Stat attr;
+int sftp::getstat(std::string path,Stat &attr){
 	sftp_attributes sfbuf;
-	std::string p = sftproot + path;
+	std::string p = add_path(sftproot,path);
 	sfbuf = sftp_stat(m_sftp,p.c_str());
 	if(!sfbuf){
 		std::cerr << "sftp_stat failed: " << p << std::endl;
+		return -1;
 	}
-	std::cout << "sftp_stat success" << std::endl;
 	convert_sf_to_St(path,sfbuf,attr);
-	std::cout << "convert success" << std::endl;
-	return attr;
+	return 0;
 }
 
 std::list<Stat> sftp::getdir(std::string path){
@@ -86,15 +107,15 @@ std::list<Stat> sftp::getdir(std::string path){
 	Stat attr;
 	sftp_attributes sfbuf;
 	sftp_dir dir;
-	std::string p = sftproot + path + "/";
+	std::string p = add_path(sftproot,path);
 	dir = sftp_opendir(m_sftp,p.c_str());
 	if(!dir){
-		std::cerr << "getdir open " << path << " failed" << std::endl;
+		std::cerr << "getdir open " << p << " failed" << std::endl;
 		return attrs; 
 	}
 	sfbuf=sftp_readdir(m_sftp,dir);	
 	while(sfbuf!=NULL){
-		convert_sf_to_St(p+sfbuf->name,sfbuf,attr);
+		convert_sf_to_St(add_path(p,sfbuf->name),sfbuf,attr);
 		attrs.push_back(attr);
 		sftp_attributes_free(sfbuf);
 		sfbuf=sftp_readdir(m_sftp,dir);
@@ -108,8 +129,8 @@ int sftp::fulldownload(std::string from, std::string dest){
 	int nbytes,size=0;
 	std::ofstream ofs;
 	char buffer[512];
-	std::string pf = sftproot + from;
-	file = sftp_open(m_sftp,pf.c_str(), O_RDONLY,0);
+	std::string p = add_path(sftproot,from);
+	file = sftp_open(m_sftp,p.c_str(), O_RDONLY,0);
 	ofs.open(dest,std::ios_base::out|std::ios_base::binary|std::ios_base::trunc);
 	for(;;){
 		nbytes = sftp_read(file,buffer,sizeof(buffer));
@@ -133,7 +154,7 @@ int sftp::fulldownload(std::string from, std::string dest){
 int sftp::download(std::string path,char* buf,int offset,int size){
 	sftp_file file;
 	int nbytes;
-	std::string p = sftproot + path;
+	std::string p = add_path(sftproot,path);
 	file = sftp_open(m_sftp,p.c_str(), O_RDONLY,0);
 	if(sftp_seek(file, offset)<0){
 		std::cerr << "sftp_seek error" << std::endl;
@@ -153,7 +174,7 @@ int sftp::download(std::string path,char* buf,int offset,int size){
 int sftp::upload(std::string path,char* buf,int offset,int size){
 	sftp_file file;
 	int nbytes;
-	std::string p = sftproot + path;
+	std::string p = add_path(sftproot,path);
 	file = sftp_open(m_sftp,p.c_str(),O_WRONLY,0);
 	if(sftp_seek(file, offset)<0){
 		std::cerr << "sftp_seek error" << std::endl;

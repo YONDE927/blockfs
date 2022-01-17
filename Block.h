@@ -25,7 +25,7 @@ public:
 	int download();
 	int upload();
 	int read(char* buf,int offset,int size);
-	int write(char* buf,int offset,int size);
+	int write(const char* buf,int offset,int size);
 };
 
 #endif

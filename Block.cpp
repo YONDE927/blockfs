@@ -53,7 +53,7 @@ int block::read(char* buf,int offset,int size){
 	return size;
 }
 
-int block::write(char* buf,int offset,int size){
+int block::write(const char* buf,int offset,int size){
 	if(data==NULL){
 		this->download();
 	}
