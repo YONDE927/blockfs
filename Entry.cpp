@@ -103,13 +103,19 @@ void directory::download(){
 	stbufs=p_sftp->getdir(path);
 	std::list<Stat>::iterator itr = stbufs.begin();
 	for(;itr!=stbufs.end();++itr){
-		p = path + "/" + itr->name;
+		if(path=="/"){
+			p = path + itr->name;
+		}else{
+			p = path + "/" + itr->name;
+		}
+		std::cout << "dir.download "<< itr->name << " " << p << std::endl;
 		at = new attribute(p_sftp,p,itr->st);
 		// if(S_ISDIR(itr->st.st_mode)){
 		// 	et = new directory(p,p_sftp);
 		// }else if(S_ISREG(itr->st.st_mode)){
 		// 	et = new file(p,p_sftp);
 		// }
+		at->print();
 		attrs.push_back(at);
 	}
 }

@@ -1,3 +1,6 @@
+#ifndef BLOCKFS_H
+#define BLOCKFS_H
+
 #define FUSE_USE_VERSION 31
 
 #include <fuse3/fuse.h>
@@ -23,3 +26,6 @@ int b_readdir(const char *path,void *buf,fuse_fill_dir_t filler,
 			  off_t offset,struct fuse_file_info *fi,
 			  enum fuse_readdir_flags flags);
 int b_closedir(const char *path,struct fuse_file_info *fi);
+int b_statfs(const char *path, struct statvfs *stbuf);
+
+#endif

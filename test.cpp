@@ -4,8 +4,8 @@
 #include "Manager.h"
 
 #define DEST "/home/yonde/Documents/blockfs/build/sample"
-#define PATH "hello/hello.c"
-#define PATH2 "hello"
+#define PATH "/sample"
+#define PATH2 "/sample.d"
 #define PATH3 "hello/whale.txt"
 
 void printstat(Stat &st);
@@ -74,7 +74,7 @@ int test_block(){
 	sftp* p_connector = new sftp;
 	std::string path = PATH;
 	int nread;
-	char buf[512];
+	char buf[32];
 
 	memset(buf,0,sizeof(buf));
 	block *b1 = new block(p_connector,&path,0);
@@ -84,10 +84,12 @@ int test_block(){
 	if(b1->download()<0){
 		return -1;
 	}
-	if(b1->read(buf,0,512)<0){
+	nread=b1->read(buf,0,32);
+	if(nread<0){
 		return -1;
 	}
-	std::cout << buf << std::endl;
+	buf[31]='\0';
+	std::cout<< '\n' << nread << "\n" << buf<< '\n'  << std::endl;
 	delete b1;
 	delete p_connector;
 	return 0;
@@ -100,14 +102,12 @@ int test_entry(){
 	//attribute
 	attribute* a1 = new attribute(p_connector,path);
 	struct stat s1 = a1->getattr();
-	if(s1.st_size!=69){
-		return -1;
-	}
+	std::cout << "\ns1.st_size : " << s1.st_size << '\n'  << std::endl;
 	printstat(s1);
 
 	//entry
 	entry* e1 = new entry(path,p_connector);
-	if(e1->getattr().st_size!=69){
+	if(e1->getattr().st_size<0){
 		return -1;
 	}
 
@@ -120,16 +120,16 @@ int test_entry(){
 	int wsize,size = 242;
 	char buf[size];
 	char wbuf[] = "yuta";
-	file* fi = new file(PATH3,p_connector);
+	file* fi = new file(PATH,p_connector);
 	fi->open();
 	fi->read(buf,0,size);
 	buf[size-1]='\0';
-	std::cout << buf << std::endl;
+	std::cout << '\n'  << buf << '\n' << std::endl;
 	wsize = fi->write(wbuf,0,sizeof(wbuf)-1);
 	std::cout << "write size " << wsize << std::endl;
 	fi->read(buf,0,size);
 	buf[size-1]='\0';
-	std::cout << buf << std::endl;
+	std::cout << '\n'  << buf << '\n' << std::endl;
 	fi->close();
 
 	//delete

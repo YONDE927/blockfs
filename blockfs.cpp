@@ -5,20 +5,20 @@ manager* p_manager;
 void* b_init(struct fuse_conn_info *conn,struct fuse_config *fc){
 	sftp* p_sftp = new sftp;
 	p_manager = new manager(p_sftp);
-	return NULL;
+	conn->want |= (conn->capable & FUSE_CAP_READDIRPLUS);
+    return fuse_get_context()->private_data;
 }
 
 int b_getattr(const char *path,struct stat *stbuf,struct fuse_file_info *fi){
+	std::cout<< "\n"  << "b_getattr " << path << std::endl;
 	entry* et;
 	et=p_manager->lookup(std::string(path));
-	std::cout << "b_getattr " << path << std::endl;
 	if(et==NULL){
-		std::cout << "b_getattr fail " << path << std::endl;
+		std::cout << "b_getattr fail " << path << "\n" << std::endl;
 		return -errno;
 	}
-	std::cout << "b_getattr success " << path << "size : " << et->getattr().st_size << std::endl;
+	std::cout << "b_getattr success " << path << " size : " << et->getattr().st_size << std::endl;
 	*stbuf=et->getattr();
-	std::cout << "stbuf " << stbuf->st_size << std::endl;
 	return 0;
 }
 
@@ -68,6 +68,7 @@ int b_opendir(const char *path,struct fuse_file_info *fi){
 	if(et==NULL){
 		return -errno;
 	}
+	fi->fh=0;
 	return 0;
 }
 
@@ -83,6 +84,7 @@ int b_readdir(const char *path,void *buf,fuse_fill_dir_t filler,off_t offset,str
 	for(auto itr=attrs.begin();itr!=attrs.end();++itr){
 		struct stat st = (*itr)->getattr();
 		filler(buf,(*itr)->name.c_str(),&st,0,FUSE_FILL_DIR_PLUS);
+		// filler(buf,(*itr)->name.c_str(),NULL,0,FUSE_FILL_DIR_PLUS);
 	}
 	return 0;
 }
@@ -92,11 +94,28 @@ int b_closedir(const char *path,struct fuse_file_info *fi){
 	return 0;
 }
 
-const struct fuse_operations b_oper = {
+int b_statfs(const char *path, struct statvfs *buf){
+    memset(buf, 0, sizeof(struct statvfs));
+	buf->f_bsize = 4096;
+	buf->f_frsize = 4096;
+	buf->f_blocks = 1024;     
+	buf->f_bfree = 1024;
+	buf->f_bavail = 1024;
+	buf->f_files = 1000;
+	buf->f_ffree = 100;
+	buf->f_favail = 100;
+	buf->f_fsid = 0;
+	buf->f_flag = 0;
+	buf->f_namemax = 255;
+    return 0;
+}
+
+static struct fuse_operations b_oper = {
 	.getattr = b_getattr,
 	.open = b_open,
 	.read = b_read,
 	.write = b_write,
+	.statfs = b_statfs,
 	.release = b_close,
 	.opendir = b_opendir,
 	.readdir = b_readdir,
@@ -106,12 +125,5 @@ const struct fuse_operations b_oper = {
 
 int main(int argc, char *argv[])
 {
-        enum { MAX_ARGS = 10 };
-        int i,new_argc;
-        char *new_argv[MAX_ARGS];
-        umask(0);
-        for (i=0, new_argc=0; (i<argc) && (new_argc<MAX_ARGS); i++) {
-                new_argv[new_argc++] = argv[i];
-        }
-        return fuse_main(new_argc, new_argv, &b_oper, NULL);
+    return fuse_main(argc,argv, &b_oper, NULL);
 }

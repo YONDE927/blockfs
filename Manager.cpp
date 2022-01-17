@@ -14,6 +14,7 @@ entry* manager::lookup(std::string path){
 	entry* et;
 	auto pair=entrymap.find(path);
 	if(pair==entrymap.end()){
+		std::cout << "lookup " << path << std::endl;
 		et=this->load(path);
 	}else{
 		et = pair->second;
@@ -25,6 +26,7 @@ entry* manager::load(std::string path){
 	int ec;
 	Stat St;
 	entry* et;
+	std::cout << "load " << path << std::endl;
 	ec = p_sftp->getstat(path,St);
 	if(ec<0){
 		return NULL;
@@ -33,6 +35,8 @@ entry* manager::load(std::string path){
 		et = new file(path,p_sftp);
 	}else if(St.type==2){
 		et = new directory(path,p_sftp);
+	}else{
+		std::cout << "St.type not match" << path << std::endl;
 	}
 	entrymap[path]=et;
 	return et;

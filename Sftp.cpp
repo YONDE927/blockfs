@@ -15,22 +15,28 @@ void convert_sf_to_St(std::string path,sftp_attributes sfbuf,Stat &stat){
 }
 
 std::string add_path(std::string root,std::string path){
-	auto p1=root;
-	auto p2=path;
-	if(root.back() =='/'){
-		p1 = root.substr(0,root.size()-2);
+	if(path=="/"){
+		return root;
 	}
-	if(path.front() == '/'){
-		if(path.size()==1){
-			return p1;
-		}else{
-			p2 = path.substr(1,path.size()-1);
-		}
-	}
-	if(path.back() == '/'){
-		p2 = path.substr(0,path.size()-2);
-	}
-	return p1 + "/" + p2;
+	return root + path;
+	// auto p1=root;
+	// auto p2=path;
+	// if(root.back() =='/'){
+	// 	p1 = root.substr(0,root.size()-1);
+	// }
+	// if(path.front() == '/'){
+	// 	if(path.size()==1){
+	// 		std::cout << "add_path " << p1 << std::endl;
+	// 		return p1;
+	// 	}else{
+	// 		p2 = path.substr(1,path.size()-1);
+	// 	}
+	// }
+	// if(path.back() == '/'){
+	// 	p2 = p2.substr(0,p2.size()-1);
+	// }
+	// std::cout << "add_path " << p1 + "/" + p2 << std::endl;
+	// return p1 + "/" + p2;
 }
 
 int sftp::loadoption(){
@@ -93,9 +99,10 @@ sftp::~sftp(){
 int sftp::getstat(std::string path,Stat &attr){
 	sftp_attributes sfbuf;
 	std::string p = add_path(sftproot,path);
+	std::cout << "getstat start " << p << std::endl;
 	sfbuf = sftp_stat(m_sftp,p.c_str());
 	if(!sfbuf){
-		std::cerr << "sftp_stat failed: " << p << std::endl;
+		std::cerr << "getstat failed: " << p << std::endl;
 		return -1;
 	}
 	convert_sf_to_St(path,sfbuf,attr);
@@ -108,6 +115,7 @@ std::list<Stat> sftp::getdir(std::string path){
 	sftp_attributes sfbuf;
 	sftp_dir dir;
 	std::string p = add_path(sftproot,path);
+	std::cerr << "sftp.getdir " << p << std::endl;
 	dir = sftp_opendir(m_sftp,p.c_str());
 	if(!dir){
 		std::cerr << "getdir open " << p << " failed" << std::endl;
@@ -115,7 +123,7 @@ std::list<Stat> sftp::getdir(std::string path){
 	}
 	sfbuf=sftp_readdir(m_sftp,dir);	
 	while(sfbuf!=NULL){
-		convert_sf_to_St(add_path(p,sfbuf->name),sfbuf,attr);
+		convert_sf_to_St(p+'/'+sfbuf->name,sfbuf,attr);
 		attrs.push_back(attr);
 		sftp_attributes_free(sfbuf);
 		sfbuf=sftp_readdir(m_sftp,dir);
