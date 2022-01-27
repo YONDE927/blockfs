@@ -3,9 +3,9 @@
 #include "Entry.h"
 #include "Manager.h"
 
-#define DEST "/home/yonde/Documents/blockfs/build/sample"
-#define PATH "/sample"
-#define PATH2 "/sample.d"
+#define DEST "/home/yonde/Documents/blockfs/build/hello"
+#define PATH "/hello/hello.c"
+#define PATH2 "/hello"
 #define PATH3 "hello/whale.txt"
 
 void printstat(Stat &st);
@@ -51,7 +51,7 @@ int test_sftp(){
 	if(ec==0){
 		printStat(attribute);
 	}
-	std::list<Stat> attrs = p_connector->getdir("hello");
+	std::list<Stat> attrs = p_connector->getdir("sample.d");
 	std::list<Stat>::iterator itr;
 	for(itr=attrs.begin();itr!=attrs.end();itr++){
 		printStat(*itr);
@@ -117,9 +117,9 @@ int test_entry(){
 	d1->ls();
 
 	//file
-	int wsize,size = 242;
+	int wsize,size = 20;
 	char buf[size];
-	char wbuf[] = "yuta";
+	char wbuf[] = "1/1813:00";
 	file* fi = new file(PATH,p_connector);
 	fi->open();
 	fi->read(buf,0,size);
@@ -162,6 +162,5 @@ int test_manager(){
 	}
 	std::cout << "entrymap size : " << man->size() << std::endl;
 	delete man;
-	delete p_connector;
 	return 0;
 }

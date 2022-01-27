@@ -22,7 +22,7 @@ public:
 	attribute(sftp* _p_sftp,std::string _path);
 	attribute(sftp* _p_sftp,std::string _path,struct stat &_st);
 	~attribute();
-	struct stat getattr();
+	struct stat getattr(int remote=0);
 	void print();
 	int download();
 };
@@ -37,7 +37,7 @@ protected:
 public:
 	entry(std::string _path,sftp *_p_sftp);
 	entry(std::string _path,struct stat &_st,sftp *_p_sftp);
-	struct stat getattr();
+	struct stat getattr(int remote=0);
 	virtual ~entry();
 };
 
@@ -68,6 +68,8 @@ public:
 	int close();
 	int read(char* buf,int offset,int size);
 	int write(const char* buf,int offset,int size);
+	int lload(); /* ファイルをローカルストレージからロード*/
+	int ldown(); /* ファイルをローカルストレージ上に保存
 };
 
 #endif

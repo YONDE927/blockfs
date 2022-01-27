@@ -2,23 +2,42 @@
 
 manager* p_manager;
 
+static void printstat(struct stat &st){
+	std::cout << "st.st_mode " << st.st_mode 
+	<< "\nst.st_size " << st.st_size 
+	<< "\nst.st_mtime " << st.st_mtime 
+	<< "\nst.st_nlink " << st.st_nlink << std::endl;
+}
+
 void* b_init(struct fuse_conn_info *conn,struct fuse_config *fc){
 	sftp* p_sftp = new sftp;
 	p_manager = new manager(p_sftp);
-	conn->want |= (conn->capable & FUSE_CAP_READDIRPLUS);
+	//conn->want |= (conn->capable & FUSE_CAP_READDIRPLUS);
     return fuse_get_context()->private_data;
 }
 
 int b_getattr(const char *path,struct stat *stbuf,struct fuse_file_info *fi){
 	std::cout<< "\n"  << "b_getattr " << path << std::endl;
+	struct stat st;
 	entry* et;
 	et=p_manager->lookup(std::string(path));
 	if(et==NULL){
 		std::cout << "b_getattr fail " << path << "\n" << std::endl;
-		return -errno;
+		return -ENOENT;
 	}
-	std::cout << "b_getattr success " << path << " size : " << et->getattr().st_size << std::endl;
-	*stbuf=et->getattr();
+	//std::cout << "b_getattr success " << path << " size : " << et->getattr().st_size << std::endl;
+	*stbuf=et->getattr(1);
+	// st = et->getattr();
+	// stbuf->st_mode = S_IFDIR | 0755;
+	// std::cout << "correct mode is " << stbuf->st_mode << std::endl; 
+	// stbuf->st_nlink = 0;
+	// if (strcmp(path, "/") == 0) {
+	// 	stbuf->st_mode = S_IFDIR | 0755;
+	// 	stbuf->st_nlink = 2;
+	// } else{
+	// 	return -ENOENT;
+	// }
+
 	return 0;
 }
 
@@ -26,7 +45,7 @@ int b_open(const char *path,struct fuse_file_info *fi){
 	file* et;
 	et=(file*)p_manager->lookup(std::string(path));
 	if(et==NULL){
-		return -errno;
+		return -ENOENT;
 	}
 	et->open();
 	return 0;
@@ -35,23 +54,28 @@ int b_open(const char *path,struct fuse_file_info *fi){
 int b_read(const char *path,char *buf,size_t size,off_t offset,struct fuse_file_info *fi){
 	int nread;
 	file* et;
+	std::cout << "b_read " << path << std::endl;
 	et=(file*)p_manager->lookup(std::string(path));
 	nread=et->read(buf,offset,size);
-	if(nread!=size){
-		return -errno;
+	std::cout << "read " << nread << " size. " << path << std::endl;
+	if(nread<0){
+		std::cout << "b_read failed" << path << std::endl;
+		return -ENOENT;
 	}
-	return 0;
+	return nread;
 }
 
 int b_write(const char *path,const char *buf,size_t size,off_t offset,struct fuse_file_info *fi){
+	std::cout << "b_write " << path << std::endl;
 	int nwritten;
 	file* et;
 	et=(file*)p_manager->lookup(std::string(path));
 	nwritten=et->write(buf,offset,size);
-	if(nwritten!=size){
-		return -errno;
+	if(nwritten<0){
+		std::cout << "b_write failed" << path << std::endl;
+		return -ENOENT;
 	}
-	return 0;
+	return nwritten;
 }
 
 int b_close(const char *path,struct fuse_file_info *fi){
@@ -66,7 +90,7 @@ int b_opendir(const char *path,struct fuse_file_info *fi){
 	directory* et;
 	et=(directory*)p_manager->lookup(std::string(path));
 	if(et==NULL){
-		return -errno;
+		return -ENOENT;
 	}
 	fi->fh=0;
 	return 0;
@@ -78,11 +102,11 @@ int b_readdir(const char *path,void *buf,fuse_fill_dir_t filler,off_t offset,str
 	std::cout << "b_readdir " << path << std::endl;
 	et=(directory*)p_manager->lookup(std::string(path));
 	if(et==NULL){
-		return -errno;
+		return -ENOENT;
 	}
 	attrs=et->readdir();
 	for(auto itr=attrs.begin();itr!=attrs.end();++itr){
-		struct stat st = (*itr)->getattr();
+		struct stat st = (*itr)->getattr(1);
 		filler(buf,(*itr)->name.c_str(),&st,0,FUSE_FILL_DIR_PLUS);
 		// filler(buf,(*itr)->name.c_str(),NULL,0,FUSE_FILL_DIR_PLUS);
 	}
@@ -94,32 +118,32 @@ int b_closedir(const char *path,struct fuse_file_info *fi){
 	return 0;
 }
 
-int b_statfs(const char *path, struct statvfs *buf){
-    memset(buf, 0, sizeof(struct statvfs));
-	buf->f_bsize = 4096;
-	buf->f_frsize = 4096;
-	buf->f_blocks = 1024;     
-	buf->f_bfree = 1024;
-	buf->f_bavail = 1024;
-	buf->f_files = 1000;
-	buf->f_ffree = 100;
-	buf->f_favail = 100;
-	buf->f_fsid = 0;
-	buf->f_flag = 0;
-	buf->f_namemax = 255;
-    return 0;
-}
+// int b_statfs(const char *path, struct statvfs *buf){
+//     memset(buf, 0, sizeof(struct statvfs));
+// 	buf->f_bsize = 4096;
+// 	buf->f_frsize = 4096;
+// 	buf->f_blocks = 1024;     
+// 	buf->f_bfree = 1024;
+// 	buf->f_bavail = 1024;
+// 	buf->f_files = 1000;
+// 	buf->f_ffree = 100;
+// 	buf->f_favail = 100;
+// 	buf->f_fsid = 0;
+// 	buf->f_flag = 0;
+// 	buf->f_namemax = 255;
+//     return 0;
+// }
 
-static struct fuse_operations b_oper = {
+struct fuse_operations b_oper = {
 	.getattr = b_getattr,
 	.open = b_open,
 	.read = b_read,
 	.write = b_write,
-	.statfs = b_statfs,
+	// .statfs = b_statfs,
 	.release = b_close,
-	.opendir = b_opendir,
+	//.opendir = b_opendir,
 	.readdir = b_readdir,
-	.releasedir = b_closedir,
+	//.releasedir = b_closedir,
 	.init = b_init
 };
 

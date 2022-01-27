@@ -8,9 +8,10 @@
 #include <list>
 #include <fcntl.h>
 #include <string.h>
+#include <string>
 #include "Sftp.h"
 
-#define BLOCK_SIZE 32
+#define BLOCK_SIZE 256
 
 class block {
 private:
@@ -26,6 +27,8 @@ public:
 	int upload();
 	int read(char* buf,int offset,int size);
 	int write(const char* buf,int offset,int size);
+	int lload();
+	int ldown();
 };
 
 #endif

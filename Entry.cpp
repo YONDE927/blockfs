@@ -2,6 +2,7 @@
 
 //attribute
 attribute::attribute(sftp* _p_sftp,std::string _path){
+	std::cout << "create new attribute " << _path << std::endl;
 	std::filesystem::path p = _path;
 	p_sftp = _p_sftp;
 	path = _path;
@@ -11,6 +12,7 @@ attribute::attribute(sftp* _p_sftp,std::string _path){
 }
 
 attribute::attribute(sftp* _p_sftp,std::string _path,struct stat &_st){
+	std::cout << "create new attribute with stat " << _path << std::endl;
 	std::filesystem::path p = _path;
 	p_sftp = _p_sftp;
 	path = _path;
@@ -34,7 +36,10 @@ int attribute::download(){
 	return 0;
 }
 
-struct stat attribute::getattr(){
+struct stat attribute::getattr(int remote){
+	if(remote){
+		this->download();
+	}
 	return *st;
 }
 
@@ -59,8 +64,8 @@ entry::entry(std::string _path,struct stat &_st,sftp *_p_sftp){
 	stat=new attribute(p_sftp,path,_st);
 }
 
-struct stat entry::getattr(){
-	return stat->getattr();
+struct stat entry::getattr(int remote){ 
+	return stat->getattr(remote);
 }
 
 entry::~entry(){
@@ -69,11 +74,13 @@ entry::~entry(){
 
 //directory
 directory::directory(std::string _path,sftp *_p_sftp):entry(_path,_p_sftp){
+	std::cout << "create new directory " << _path << std::endl;
 	flag=2;
 	this->download();
 }
 
 directory::directory(std::string _path,struct stat &_st,sftp *_p_sftp):entry(_path,_st,_p_sftp){
+	std::cout << "create new directory with stat " << _path << std::endl;
 	flag=2;
 	this->download();
 }
@@ -108,20 +115,14 @@ void directory::download(){
 		}else{
 			p = path + "/" + itr->name;
 		}
-		std::cout << "dir.download "<< itr->name << " " << p << std::endl;
 		at = new attribute(p_sftp,p,itr->st);
-		// if(S_ISDIR(itr->st.st_mode)){
-		// 	et = new directory(p,p_sftp);
-		// }else if(S_ISREG(itr->st.st_mode)){
-		// 	et = new file(p,p_sftp);
-		// }
-		at->print();
 		attrs.push_back(at);
 	}
 }
 
 //file
 file::file(std::string _path,sftp *_p_sftp): entry(_path,_p_sftp){
+	std::cout << "create new file " << _path << std::endl;
 	int block_num;
 	block *b;
 	haveAll = false;
@@ -135,6 +136,7 @@ file::file(std::string _path,sftp *_p_sftp): entry(_path,_p_sftp){
 }
 
 file::file(std::string _path,struct stat &_st,sftp *_p_sftp): entry(_path,_st,_p_sftp){
+	std::cout << "create new file with stat " << _path << std::endl;
 	int block_num;
 	block *b;
 	haveAll = false;
@@ -170,57 +172,62 @@ int file::close(){
 }
 
 int file::read(char* buf,int offset,int size){
+	std::cout << "file::read " << path;
 	if(!fd){
+		std::cout << "file::read failed " << path << std::endl;
 		return -1;
 	}
 	//find first block
 	int ind = offset / BLOCK_SIZE;
-	int nread;
-	int oread=size;
+	int nread,oread=0;
+	int fsize = this->getattr().st_size;
 	int block_offset = offset % BLOCK_SIZE;
+	if(fsize<size){
+		size = fsize;
+	}
 	while(size>0){
 		if(ind>=blocks.size()){
 			break;
 		}
-		if(size>BLOCK_SIZE){
-			nread=blocks[ind]->read(buf,block_offset,BLOCK_SIZE-block_offset);
-			if(block_offset>0){
-				block_offset=0;	
-			}
-		}else{
-			nread=blocks[ind]->read(buf,block_offset,size);
+		nread=blocks[ind]->read(buf,block_offset,size);
+		if(block_offset>0){
+			block_offset=0;	
 		}
 		buf+=nread;
 		size-=nread;
+		oread+=nread;
 		ind++;
 	}
-	return oread - size;
+	return oread;
 }
 
 int file::write(const char* buf,int offset,int size){
+	std::cout << "file::write " << path << " size " << size << " offset " << offset << std::endl;
 	if(!fd){
+		std::cout << "file::write failed" << path << std::endl;
 		return -1;
 	}
 	//find first block
 	int ind = offset / BLOCK_SIZE;
-	int nwritten{0};
-	int owritten=size;
+	int nwritten{0},owritten{0};
 	int block_offset = offset % BLOCK_SIZE;
 	while(size>0){
 		if(ind>=blocks.size()){
+			std::cout << "file::write block index over" << path << std::endl;
 			break;
 		}
-		if(size>(BLOCK_SIZE-block_offset)){
-			nwritten=blocks[ind]->write(buf,block_offset,BLOCK_SIZE-block_offset);
-			if(block_offset>0){
-				block_offset=0;
-			}
-		}else{
-			nwritten=blocks[ind]->write(buf,block_offset,size);
+		nwritten=blocks[ind]->write(buf,block_offset,size);
+		if(nwritten<0){
+			std::cout << "some block write failed" << path << std::endl;
+			break;
+		}
+		if(block_offset>0){
+			block_offset=0;
 		}
 		buf+=nwritten;
 		size-=nwritten;
+		owritten+=nwritten;
 		ind++;
 	}
-	return owritten - size;
+	return owritten;
 }

@@ -11,7 +11,26 @@ void convert_sf_to_St(std::string path,sftp_attributes sfbuf,Stat &stat){
 	stat.st.st_atime = sfbuf->atime;
 	stat.st.st_uid = sfbuf->uid;
 	stat.st.st_gid = sfbuf->gid;
+	//nlinkをzeroに設定してみる。効いた。
 	stat.type = sfbuf->type;
+	if(sfbuf->type==1){
+		std::cout << "this is file" << std::endl; 
+		stat.st.st_mode = S_IFREG | 0444;
+		stat.st.st_nlink = 1;
+	}else if(sfbuf->type==2){
+		std::cout << "this is directory" << std::endl; 
+		stat.st.st_mode = S_IFDIR | 0755;
+		stat.st.st_nlink = 2;
+	}else{
+		std::cout << "this is what?" << std::endl; 
+	}
+}
+
+static void printstat(struct stat &st){
+	std::cout << "st.st_mode " << st.st_mode 
+	<< "\nst.st_size " << st.st_size 
+	<< "\nst.st_mtime " << st.st_mtime 
+	<< "\nst.st_nlink " << st.st_nlink << std::endl;
 }
 
 std::string add_path(std::string root,std::string path){
@@ -19,24 +38,6 @@ std::string add_path(std::string root,std::string path){
 		return root;
 	}
 	return root + path;
-	// auto p1=root;
-	// auto p2=path;
-	// if(root.back() =='/'){
-	// 	p1 = root.substr(0,root.size()-1);
-	// }
-	// if(path.front() == '/'){
-	// 	if(path.size()==1){
-	// 		std::cout << "add_path " << p1 << std::endl;
-	// 		return p1;
-	// 	}else{
-	// 		p2 = path.substr(1,path.size()-1);
-	// 	}
-	// }
-	// if(path.back() == '/'){
-	// 	p2 = p2.substr(0,p2.size()-1);
-	// }
-	// std::cout << "add_path " << p1 + "/" + p2 << std::endl;
-	// return p1 + "/" + p2;
 }
 
 int sftp::loadoption(){
@@ -99,10 +100,10 @@ sftp::~sftp(){
 int sftp::getstat(std::string path,Stat &attr){
 	sftp_attributes sfbuf;
 	std::string p = add_path(sftproot,path);
-	std::cout << "getstat start " << p << std::endl;
+	std::cout << "sftp stat " << p << std::endl;
 	sfbuf = sftp_stat(m_sftp,p.c_str());
 	if(!sfbuf){
-		std::cerr << "getstat failed: " << p << std::endl;
+		std::cerr << "sftp stat failed " << p << std::endl;
 		return -1;
 	}
 	convert_sf_to_St(path,sfbuf,attr);
@@ -115,10 +116,10 @@ std::list<Stat> sftp::getdir(std::string path){
 	sftp_attributes sfbuf;
 	sftp_dir dir;
 	std::string p = add_path(sftproot,path);
-	std::cerr << "sftp.getdir " << p << std::endl;
+	std::cerr << "sftp getdir " << p << std::endl;
 	dir = sftp_opendir(m_sftp,p.c_str());
 	if(!dir){
-		std::cerr << "getdir open " << p << " failed" << std::endl;
+		std::cerr << "sftp getdir open " << p << " failed" << std::endl;
 		return attrs; 
 	}
 	sfbuf=sftp_readdir(m_sftp,dir);	
@@ -183,6 +184,7 @@ int sftp::upload(std::string path,char* buf,int offset,int size){
 	sftp_file file;
 	int nbytes;
 	std::string p = add_path(sftproot,path);
+	std::cerr << "sftp upload to " << p << " data " << buf << " offset " << offset << " size " << size << std::endl;
 	file = sftp_open(m_sftp,p.c_str(),O_WRONLY,0);
 	if(sftp_seek(file, offset)<0){
 		std::cerr << "sftp_seek error" << std::endl;

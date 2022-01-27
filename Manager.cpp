@@ -8,15 +8,17 @@ manager::~manager(){
 	for(auto itr=entrymap.begin();itr!=entrymap.end();++itr){
 		delete itr->second;
 	}
+	delete p_sftp;
 }
 
 entry* manager::lookup(std::string path){
 	entry* et;
+	std::cout << "lookup " << path << std::endl;
 	auto pair=entrymap.find(path);
 	if(pair==entrymap.end()){
-		std::cout << "lookup " << path << std::endl;
-		et=this->load(path);
+		et = this->load(path);
 	}else{
+		std::cout << path << " found " << std::endl;
 		et = pair->second;
 	}
 	return et;

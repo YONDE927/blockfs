@@ -31,7 +31,10 @@ int block::download(){
 int block::upload(){
 	int offset,nwritten;
 	offset=BLOCK_SIZE*index;
-	nwritten=p_sftp->upload(*p_path,data,offset,sizeof(data));
+
+	std::cout << "uploading " << data << std::endl;
+	std::cout << "size of block is " << strlen(data) << std::endl;
+	nwritten=p_sftp->upload(*p_path,data,offset,strlen(data));
 	if(nwritten<=0){
 		std::cerr << "sftp->upload fail" << std::endl;
 		return -1;
@@ -41,7 +44,7 @@ int block::upload(){
 }
 
 int block::read(char* buf,int offset,int size){
-	int dsize;
+	int dsize,nread;
 	if(data==NULL){
 		dsize = this->download();
 	}
@@ -49,11 +52,21 @@ int block::read(char* buf,int offset,int size){
 		std::cerr << "offset over BLOCK_SIZE" << std::endl;
 		return -1;
 	}
-	memcpy(buf,data+offset,size);
-	return size;
+	if(size > (BLOCK_SIZE-offset)){
+		memcpy(buf,data+offset,BLOCK_SIZE-offset);
+		nread= BLOCK_SIZE-offset;
+	}else if(size >= 0){
+		memcpy(buf,data+offset,size);
+		nread= size;
+	}else{
+		nread= -1;
+	}
+	std::cout << "block [" << index << "] is read " << nread << " bytes" << std::endl;
+	return nread;
 }
 
 int block::write(const char* buf,int offset,int size){
+	int nwritten;
 	if(data==NULL){
 		this->download();
 	}
@@ -61,7 +74,25 @@ int block::write(const char* buf,int offset,int size){
 		std::cerr << "offset over BLOCK_SIZE" << std::endl;
 		return -1;
 	}
-	memcpy(data+offset,buf,size);
+	if(size > (BLOCK_SIZE-offset)){
+		memcpy(data+offset,buf,BLOCK_SIZE-offset);
+		nwritten = BLOCK_SIZE-offset;
+	}else if(size >= 0){
+		memcpy(data+offset,buf,size);
+		nwritten = size;
+	}else{
+		nwritten = -1;
+	}
 	this->upload();
-	return size;
+	std::cout << "block [" << index << "] is writeen " << nwritten << " bytes" << std::endl;
+	return nwritten;
+}
+
+//ブロックを所定のファイルに書き込む。
+int block::lload(){
+	return 0;
+}
+//ブロックを所定のファイルから読み込む。
+int block::ldown(){
+	return 0;
 }
