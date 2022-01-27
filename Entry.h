@@ -69,7 +69,7 @@ public:
 	int read(char* buf,int offset,int size);
 	int write(const char* buf,int offset,int size);
 	int lload(); /* ファイルをローカルストレージからロード*/
-	int ldown(); /* ファイルをローカルストレージ上に保存
+	int ldown(); /* ファイルをローカルストレージ上に保存*/
 };
 
 #endif
