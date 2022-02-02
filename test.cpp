@@ -84,7 +84,7 @@ int test_block(){
 	if(b1->download()<0){
 		return -1;
 	}
-	nread=b1->read(buf,0,32);
+	nread=b1->bread(buf,0,32);
 	if(nread<0){
 		return -1;
 	}

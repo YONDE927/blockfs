@@ -132,6 +132,7 @@ file::file(std::string _path,sftp *_p_sftp): entry(_path,_p_sftp){
 		b = new block(p_sftp,&path,i);
 		blocks.push_back(b);
 	}
+	std::cout << "blocks.size" << blocks.size() << std::endl;
 	flag=1;
 }
 
@@ -142,7 +143,7 @@ file::file(std::string _path,struct stat &_st,sftp *_p_sftp): entry(_path,_st,_p
 	haveAll = false;
 	fd = false;
 	block_num = (_st.st_size / BLOCK_SIZE) + 1;
-	for(int i;i<block_num;i++){
+	for(int i=0;i<block_num;i++){
 		b = new block(p_sftp,&path,i);
 		blocks.push_back(b);
 	}
@@ -189,7 +190,7 @@ int file::read(char* buf,int offset,int size){
 		if(ind>=blocks.size()){
 			break;
 		}
-		nread=blocks[ind]->read(buf,block_offset,size);
+		nread=blocks[ind]->bread(buf,block_offset,size);
 		if(block_offset>0){
 			block_offset=0;	
 		}
@@ -211,12 +212,18 @@ int file::write(const char* buf,int offset,int size){
 	int ind = offset / BLOCK_SIZE;
 	int nwritten{0},owritten{0};
 	int block_offset = offset % BLOCK_SIZE;
+	block *b;
+
 	while(size>0){
+		//append block
 		if(ind>=blocks.size()){
-			std::cout << "file::write block index over" << path << std::endl;
-			break;
+			std::cout << "file::write block index over, add blocks " << path << std::endl;
+			for(int i=blocks.size();i<ind;i++){
+				b = new block(p_sftp,&path,i);
+				blocks.push_back(b);
+			}
 		}
-		nwritten=blocks[ind]->write(buf,block_offset,size);
+		nwritten=blocks[ind]->bwrite(buf,block_offset,size);
 		if(nwritten<0){
 			std::cout << "some block write failed" << path << std::endl;
 			break;
@@ -230,4 +237,9 @@ int file::write(const char* buf,int offset,int size){
 		ind++;
 	}
 	return owritten;
+}
+
+int lload(int fd){
+	int nread;
+	return 0;
 }

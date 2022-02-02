@@ -11,6 +11,7 @@ block::~block(){
 	delete[] data;
 }
 
+//sftpとともにcacheのロードもここに加えるか？
 int block::download(){
 	int offset,nread;
 	if(data==NULL){
@@ -43,7 +44,7 @@ int block::upload(){
 	}
 }
 
-int block::read(char* buf,int offset,int size){
+int block::bread(char* buf,int offset,int size){
 	int dsize,nread;
 	if(data==NULL){
 		dsize = this->download();
@@ -65,7 +66,7 @@ int block::read(char* buf,int offset,int size){
 	return nread;
 }
 
-int block::write(const char* buf,int offset,int size){
+int block::bwrite(const char* buf,int offset,int size){
 	int nwritten;
 	if(data==NULL){
 		this->download();
@@ -88,11 +89,35 @@ int block::write(const char* buf,int offset,int size){
 	return nwritten;
 }
 
-//ブロックを所定のファイルに書き込む。
-int block::lload(){
-	return 0;
-}
 //ブロックを所定のファイルから読み込む。
+int block::lload(){
+	int offset,nread;
+	if(data==NULL){
+		data=new char[BLOCK_SIZE];
+		memset(data,0,BLOCK_SIZE);
+	}
+	offset=BLOCK_SIZE*index;
+	lseek(cache_fd,offset,SEEK_SET);
+	nread=read(cache_fd,data,BLOCK_SIZE);
+	if(nread<=0){
+		std::cerr << "read cache fail" << std::endl;
+		return -1;
+	}else{
+		isfull=true;
+		return nread;
+	}
+}
+//ブロックを所定のファイルに書き込む。
 int block::ldown(){
-	return 0;
+	int offset,nwritten;
+	offset=BLOCK_SIZE*index;
+	lseek(cache_fd,offset,SEEK_SET);
+	nwritten=write(cache_fd,data,BLOCK_SIZE);
+	if(nwritten<=0){
+		std::cerr << "write to cache fail" << std::endl;
+		return -1;
+	}else{
+		isfull=true;
+		return nwritten;
+	}
 }

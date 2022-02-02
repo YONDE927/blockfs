@@ -25,19 +25,7 @@ int b_getattr(const char *path,struct stat *stbuf,struct fuse_file_info *fi){
 		std::cout << "b_getattr fail " << path << "\n" << std::endl;
 		return -ENOENT;
 	}
-	//std::cout << "b_getattr success " << path << " size : " << et->getattr().st_size << std::endl;
 	*stbuf=et->getattr(1);
-	// st = et->getattr();
-	// stbuf->st_mode = S_IFDIR | 0755;
-	// std::cout << "correct mode is " << stbuf->st_mode << std::endl; 
-	// stbuf->st_nlink = 0;
-	// if (strcmp(path, "/") == 0) {
-	// 	stbuf->st_mode = S_IFDIR | 0755;
-	// 	stbuf->st_nlink = 2;
-	// } else{
-	// 	return -ENOENT;
-	// }
-
 	return 0;
 }
 
