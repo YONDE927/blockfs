@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include "Sftp.h"
 #include "Entry.h"
+#include "Cache.h"
 #include <bitset>
 
 
@@ -17,8 +18,9 @@ class manager{
 private:
 	std::map<std::string,entry*> entrymap;
 	sftp* p_sftp;
+	cache* p_cache;
 public:
-	manager(sftp* _p_sftp);
+	manager(sftp* _p_sftp,cache* _p_cache);
 	~manager();
 	entry* lookup(std::string path);
 	entry* load(std::string path);

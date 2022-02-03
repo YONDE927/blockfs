@@ -11,7 +11,8 @@ static void printstat(struct stat &st){
 
 void* b_init(struct fuse_conn_info *conn,struct fuse_config *fc){
 	sftp* p_sftp = new sftp;
-	p_manager = new manager(p_sftp);
+	cache* p_cache = new cache;
+	p_manager = new manager(p_sftp,p_cache);
 	//conn->want |= (conn->capable & FUSE_CAP_READDIRPLUS);
     return fuse_get_context()->private_data;
 }
@@ -35,7 +36,7 @@ int b_open(const char *path,struct fuse_file_info *fi){
 	if(et==NULL){
 		return -ENOENT;
 	}
-	et->open();
+	et->fopen();
 	return 0;
 }
 
@@ -44,7 +45,7 @@ int b_read(const char *path,char *buf,size_t size,off_t offset,struct fuse_file_
 	file* et;
 	std::cout << "b_read " << path << std::endl;
 	et=(file*)p_manager->lookup(std::string(path));
-	nread=et->read(buf,offset,size);
+	nread=et->fread(buf,offset,size);
 	std::cout << "read " << nread << " size. " << path << std::endl;
 	if(nread<0){
 		std::cout << "b_read failed" << path << std::endl;
@@ -58,7 +59,7 @@ int b_write(const char *path,const char *buf,size_t size,off_t offset,struct fus
 	int nwritten;
 	file* et;
 	et=(file*)p_manager->lookup(std::string(path));
-	nwritten=et->write(buf,offset,size);
+	nwritten=et->fwrite(buf,offset,size);
 	if(nwritten<0){
 		std::cout << "b_write failed" << path << std::endl;
 		return -ENOENT;
@@ -69,7 +70,7 @@ int b_write(const char *path,const char *buf,size_t size,off_t offset,struct fus
 int b_close(const char *path,struct fuse_file_info *fi){
 	file* et;
 	et=(file*)p_manager->lookup(std::string(path));
-	et->close();
+	et->fclose();
 	return 0;
 }
 

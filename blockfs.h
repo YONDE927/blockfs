@@ -12,6 +12,7 @@
 
 #include "Manager.h"
 #include "Entry.h"
+#include "Cache.h"
 
 void* b_init(struct fuse_conn_info *conn,struct fuse_config *fc);
 int b_getattr(const char *path,struct stat *stbuf,struct fuse_file_info *fi);

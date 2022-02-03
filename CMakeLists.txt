@@ -17,6 +17,9 @@ ENDIF()
 add_library(sftp STATIC Sftp.cpp)
 target_link_libraries(sftp PRIVATE ssh)
 
+add_library(cache STATIC Cache.cpp)
+target_link_libraries(cache mysqlcppconn8)
+
 add_library(block STATIC Block.cpp)
 
 add_library(entry STATIC Entry.cpp)
@@ -25,7 +28,7 @@ target_link_libraries(entry PRIVATE block)
 add_library(manager STATIC Manager.cpp)
 
 add_executable(test test.cpp)
-target_link_libraries(test sftp entry manager)
+target_link_libraries(test sftp entry manager cache)
 
 add_executable(${PROJECT_NAME} blockfs.cpp)
-target_link_libraries(${PROJECT_NAME} fuse3 sftp entry manager)
+target_link_libraries(${PROJECT_NAME} fuse3 sftp entry manager cache)

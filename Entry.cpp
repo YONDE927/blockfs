@@ -2,7 +2,7 @@
 
 //attribute
 attribute::attribute(sftp* _p_sftp,std::string _path){
-	std::cout << "create new attribute " << _path << std::endl;
+	std::cout << "attribute::attribute create new attribute " << _path << std::endl;
 	std::filesystem::path p = _path;
 	p_sftp = _p_sftp;
 	path = _path;
@@ -12,7 +12,7 @@ attribute::attribute(sftp* _p_sftp,std::string _path){
 }
 
 attribute::attribute(sftp* _p_sftp,std::string _path,struct stat &_st){
-	std::cout << "create new attribute with stat " << _path << std::endl;
+	std::cout << "attribute::attribute create new attribute with stat " << _path << std::endl;
 	std::filesystem::path p = _path;
 	p_sftp = _p_sftp;
 	path = _path;
@@ -48,17 +48,19 @@ void attribute::print(){
 }
 
 //entry
-entry::entry(std::string _path,sftp *_p_sftp){
+entry::entry(std::string _path,sftp *_p_sftp,cache *_p_cache){
 	path=_path;
 	p_sftp=_p_sftp;
+	p_cache=_p_cache;
 	offset=0;
 	flag=0;
 	stat=new attribute(p_sftp,path);
 }
 
-entry::entry(std::string _path,struct stat &_st,sftp *_p_sftp){
+entry::entry(std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache){
 	path=_path;
 	p_sftp=_p_sftp;
+	p_cache=_p_cache;
 	offset=0;
 	flag=0;
 	stat=new attribute(p_sftp,path,_st);
@@ -73,14 +75,14 @@ entry::~entry(){
 }
 
 //directory
-directory::directory(std::string _path,sftp *_p_sftp):entry(_path,_p_sftp){
-	std::cout << "create new directory " << _path << std::endl;
+directory::directory(std::string _path,sftp *_p_sftp,cache *_p_cache):entry(_path,_p_sftp,_p_cache){
+	std::cout << "directory::directory create new directory " << _path << std::endl;
 	flag=2;
 	this->download();
 }
 
-directory::directory(std::string _path,struct stat &_st,sftp *_p_sftp):entry(_path,_st,_p_sftp){
-	std::cout << "create new directory with stat " << _path << std::endl;
+directory::directory(std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache):entry(_path,_st,_p_sftp,_p_cache){
+	std::cout << "directory::directory create new directory with stat " << _path << std::endl;
 	flag=2;
 	this->download();
 }
@@ -121,33 +123,29 @@ void directory::download(){
 }
 
 //file
-file::file(std::string _path,sftp *_p_sftp): entry(_path,_p_sftp){
+file::file(std::string _path,sftp *_p_sftp,cache *_p_cache): entry(_path,_p_sftp,_p_cache){
 	std::cout << "create new file " << _path << std::endl;
 	int block_num;
 	block *b;
-	haveAll = false;
-	fd = false;
 	block_num = (stat->getattr().st_size / BLOCK_SIZE) + 1;
 	for(int i=0;i<block_num;i++){
-		b = new block(p_sftp,&path,i);
+		b = new block(p_sftp,p_cache,&path,i);
 		blocks.push_back(b);
 	}
-	std::cout << "blocks.size" << blocks.size() << std::endl;
+	std::cout << "file::file blocks.size " << blocks.size() << std::endl;
 	flag=1;
 }
 
-file::file(std::string _path,struct stat &_st,sftp *_p_sftp): entry(_path,_st,_p_sftp){
+file::file(std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache): entry(_path,_st,_p_sftp,_p_cache){
 	std::cout << "create new file with stat " << _path << std::endl;
 	int block_num;
 	block *b;
-	haveAll = false;
-	fd = false;
 	block_num = (_st.st_size / BLOCK_SIZE) + 1;
 	for(int i=0;i<block_num;i++){
-		b = new block(p_sftp,&path,i);
+		b = new block(p_sftp,p_cache,&path,i);
 		blocks.push_back(b);
 	}
-	std::cout << "blocks.size" << blocks.size() << std::endl;
+	std::cout << "file::file blocks.size " << blocks.size() << std::endl;
 	flag=1;
 }
 
@@ -158,22 +156,43 @@ file::~file(){
 	}
 }
 
-bool file::isopen(){
-	return fd;
-}
-
-int file::open(){
-	fd = true;
+int file::fopen(){
+	Stat St;
+	StatCache Sc;
+	int ec;
+	//sftp stat
+	ec = p_sftp->getstat(path,St);
+	if(ec<0){
+		return -1;
+	}
+	//cache stat
+	if(p_cache->find_stat(path,Sc)==0){
+		//cacheがまだ新しいならuptodateをtrueに
+		uptodate = (St.st.st_mtime <= Sc.mtime);
+	}
+	p_cache->add_stat(path,St.st.st_size,St.st.st_mtime);
+	//open cachefile
+	std::string LocalPath = p_cache->get_location(path);
+	fd = open(LocalPath.c_str(),O_RDWR|O_CREAT, 0644);
 	return 0;
 }
 
-int file::close(){
-	fd = false;
+int file::fclose(){
+	Stat St;
+	int ec;
+	close(fd);
+	//upload後のstatをcacheに追加
+	ec = p_sftp->getstat(path,St);
+	if(ec<0){
+		return -1;
+	}
+	p_cache->add_stat(path,St.st.st_size,St.st.st_mtime);
+	fd = 0;
 	return 0;
 }
 
-int file::read(char* buf,int offset,int size){
-	std::cout << "file::read " << path;
+int file::fread(char* buf,int offset,int size){
+	std::cout << "file::read " << path << std::endl;
 	if(!fd){
 		std::cout << "file::read failed " << path << std::endl;
 		return -1;
@@ -190,7 +209,7 @@ int file::read(char* buf,int offset,int size){
 		if(ind>=blocks.size()){
 			break;
 		}
-		nread=blocks[ind]->bread(buf,block_offset,size);
+		nread=blocks[ind]->bread(buf,block_offset,size,uptodate,fd);
 		if(block_offset>0){
 			block_offset=0;	
 		}
@@ -202,7 +221,7 @@ int file::read(char* buf,int offset,int size){
 	return oread;
 }
 
-int file::write(const char* buf,int offset,int size){
+int file::fwrite(const char* buf,int offset,int size){
 	std::cout << "file::write " << path << " size " << size << " offset " << offset << std::endl;
 	if(!fd){
 		std::cout << "file::write failed" << path << std::endl;
@@ -219,11 +238,11 @@ int file::write(const char* buf,int offset,int size){
 		if(ind>=blocks.size()){
 			std::cout << "file::write block index over, add blocks " << path << std::endl;
 			for(int i=blocks.size();i<ind;i++){
-				b = new block(p_sftp,&path,i);
+				b = new block(p_sftp,p_cache,&path,i);
 				blocks.push_back(b);
 			}
 		}
-		nwritten=blocks[ind]->bwrite(buf,block_offset,size);
+		nwritten=blocks[ind]->bwrite(buf,block_offset,size,uptodate,fd);
 		if(nwritten<0){
 			std::cout << "some block write failed" << path << std::endl;
 			break;
@@ -237,9 +256,4 @@ int file::write(const char* buf,int offset,int size){
 		ind++;
 	}
 	return owritten;
-}
-
-int lload(int fd){
-	int nread;
-	return 0;
 }

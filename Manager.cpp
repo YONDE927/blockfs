@@ -1,7 +1,8 @@
 #include "Manager.h"
 
-manager::manager(sftp* _p_sftp){
+manager::manager(sftp* _p_sftp,cache* _p_cache){
 	p_sftp=_p_sftp;
+	p_cache=_p_cache;
 }
 
 manager::~manager(){
@@ -9,6 +10,7 @@ manager::~manager(){
 		delete itr->second;
 	}
 	delete p_sftp;
+	delete p_cache;
 }
 
 entry* manager::lookup(std::string path){
@@ -34,9 +36,9 @@ entry* manager::load(std::string path){
 		return NULL;
 	}
 	if(St.type==1){
-		et = new file(path,p_sftp);
+		et = new file(path,p_sftp,p_cache);
 	}else if(St.type==2){
-		et = new directory(path,p_sftp);
+		et = new directory(path,p_sftp,p_cache);
 	}else{
 		std::cout << "St.type not match" << path << std::endl;
 	}
