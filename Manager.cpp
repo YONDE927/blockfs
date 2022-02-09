@@ -1,6 +1,6 @@
-#include "Manager.h"
+#include "Manager.hpp"
 
-manager::manager(sftp* _p_sftp,cache* _p_cache){
+manager::manager(sftp* _p_sftp,cache* _p_cache):stdobj(NULL){
 	p_sftp=_p_sftp;
 	p_cache=_p_cache;
 }
@@ -36,9 +36,9 @@ entry* manager::load(std::string path){
 		return NULL;
 	}
 	if(St.type==1){
-		et = new file(path,p_sftp,p_cache);
+		et = new file(this,path,p_sftp,p_cache);
 	}else if(St.type==2){
-		et = new directory(path,p_sftp,p_cache);
+		et = new directory(this,path,p_sftp,p_cache);
 	}else{
 		std::cout << "St.type not match" << path << std::endl;
 	}

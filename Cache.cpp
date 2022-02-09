@@ -1,4 +1,4 @@
-#include "Cache.h"
+#include "Cache.hpp"
 
 #define CONFIGPATH "/home/yonde/Documents/blockfs/build/config/cacheconfig"
 

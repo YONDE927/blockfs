@@ -11,12 +11,16 @@
 #include <string.h>
 #include <sys/types.h>
 #include <string>
-#include "Sftp.h"
-#include "Cache.h"
+#include "Sftp.hpp"
+#include "Cache.hpp"
+#include "base.hpp"
 
 #define BLOCK_SIZE 256
 
-class block {
+class manager;
+class file;
+
+class block:public stdobj{
 private:
 	sftp* p_sftp;
 	cache* p_cache;
@@ -25,7 +29,7 @@ private:
 	int index;
 	int bsize{0};
 public:
-	block(sftp* _p_sftp,cache* _p_cache,std::string *_p_path,int _index);
+	block(stdobj* parent,sftp* _p_sftp,cache* _p_cache,std::string *_p_path,int _index);
 	~block();
 	int download();
 	int upload();

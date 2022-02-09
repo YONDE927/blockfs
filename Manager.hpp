@@ -8,18 +8,18 @@
 #include <map>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include "Sftp.h"
-#include "Entry.h"
-#include "Cache.h"
+#include "Sftp.hpp"
+#include "Entry.hpp"
+#include "Cache.hpp"
+#include "base.hpp"
 #include <bitset>
 
-
-class manager{
+class manager:public stdobj{
 private:
 	std::map<std::string,entry*> entrymap;
+public:
 	sftp* p_sftp;
 	cache* p_cache;
-public:
 	manager(sftp* _p_sftp,cache* _p_cache);
 	~manager();
 	entry* lookup(std::string path);

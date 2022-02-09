@@ -1,7 +1,8 @@
-#include "Entry.h"
+#include "Entry.hpp"
+#include "Manager.hpp"
 
 //attribute
-attribute::attribute(sftp* _p_sftp,std::string _path){
+attribute::attribute(stdobj* parent,sftp* _p_sftp,std::string _path):stdobj(parent){
 	std::cout << "attribute::attribute create new attribute " << _path << std::endl;
 	std::filesystem::path p = _path;
 	p_sftp = _p_sftp;
@@ -11,7 +12,7 @@ attribute::attribute(sftp* _p_sftp,std::string _path){
 	this->download();
 }
 
-attribute::attribute(sftp* _p_sftp,std::string _path,struct stat &_st){
+attribute::attribute(stdobj* parent,sftp* _p_sftp,std::string _path,struct stat &_st):stdobj(parent){
 	std::cout << "attribute::attribute create new attribute with stat " << _path << std::endl;
 	std::filesystem::path p = _path;
 	p_sftp = _p_sftp;
@@ -28,7 +29,8 @@ attribute::~attribute(){
 int attribute::download(){
 	int ec;
 	Stat stbuf;
-	ec = p_sftp->getstat(path,stbuf);
+	ec = ((manager*)base)->p_sftp->getstat(path,stbuf);
+    	//ec = p_sftp->getstat(path,stbuf);
 	if(ec<0){
 		return -1;
 	}
@@ -48,22 +50,22 @@ void attribute::print(){
 }
 
 //entry
-entry::entry(std::string _path,sftp *_p_sftp,cache *_p_cache){
+entry::entry(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache):stdobj(parent){
 	path=_path;
 	p_sftp=_p_sftp;
 	p_cache=_p_cache;
 	offset=0;
 	flag=0;
-	stat=new attribute(p_sftp,path);
+	stat=new attribute(this,p_sftp,path);
 }
 
-entry::entry(std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache){
+entry::entry(stdobj* parent,std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache):stdobj(parent){
 	path=_path;
 	p_sftp=_p_sftp;
 	p_cache=_p_cache;
 	offset=0;
 	flag=0;
-	stat=new attribute(p_sftp,path,_st);
+	stat=new attribute(this,p_sftp,path,_st);
 }
 
 struct stat entry::getattr(int remote){ 
@@ -75,13 +77,13 @@ entry::~entry(){
 }
 
 //directory
-directory::directory(std::string _path,sftp *_p_sftp,cache *_p_cache):entry(_path,_p_sftp,_p_cache){
+directory::directory(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache):entry(parent,_path,_p_sftp,_p_cache){
 	std::cout << "directory::directory create new directory " << _path << std::endl;
 	flag=2;
 	this->download();
 }
 
-directory::directory(std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache):entry(_path,_st,_p_sftp,_p_cache){
+directory::directory(stdobj* parent,std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache):entry(parent,_path,_st,_p_sftp,_p_cache){
 	std::cout << "directory::directory create new directory with stat " << _path << std::endl;
 	flag=2;
 	this->download();
@@ -109,7 +111,8 @@ void directory::download(){
 	std::list<Stat> stbufs;
 	std::string p;
 	attribute *at;
-	stbufs=p_sftp->getdir(path);
+	stbufs=((manager*)base)->p_sftp->getdir(path);
+	//stbufs=p_sftp->getdir(path);
 	std::list<Stat>::iterator itr = stbufs.begin();
 	for(;itr!=stbufs.end();++itr){
 		if(path=="/"){
@@ -117,32 +120,32 @@ void directory::download(){
 		}else{
 			p = path + "/" + itr->name;
 		}
-		at = new attribute(p_sftp,p,itr->st);
+		at = new attribute(this,p_sftp,p,itr->st);
 		attrs.push_back(at);
 	}
 }
 
 //file
-file::file(std::string _path,sftp *_p_sftp,cache *_p_cache): entry(_path,_p_sftp,_p_cache){
+file::file(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache): entry(parent,_path,_p_sftp,_p_cache){
 	std::cout << "create new file " << _path << std::endl;
 	int block_num;
 	block *b;
 	block_num = (stat->getattr().st_size / BLOCK_SIZE) + 1;
 	for(int i=0;i<block_num;i++){
-		b = new block(p_sftp,p_cache,&path,i);
+		b = new block(this,p_sftp,p_cache,&path,i);
 		blocks.push_back(b);
 	}
 	std::cout << "file::file blocks.size " << blocks.size() << std::endl;
 	flag=1;
 }
 
-file::file(std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache): entry(_path,_st,_p_sftp,_p_cache){
+file::file(stdobj* parent,std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache): entry(parent,_path,_st,_p_sftp,_p_cache){
 	std::cout << "create new file with stat " << _path << std::endl;
 	int block_num;
 	block *b;
 	block_num = (_st.st_size / BLOCK_SIZE) + 1;
 	for(int i=0;i<block_num;i++){
-		b = new block(p_sftp,p_cache,&path,i);
+		b = new block(this,p_sftp,p_cache,&path,i);
 		blocks.push_back(b);
 	}
 	std::cout << "file::file blocks.size " << blocks.size() << std::endl;
@@ -161,7 +164,8 @@ int file::fopen(){
 	StatCache Sc;
 	int ec;
 	//sftp stat
-	ec = p_sftp->getstat(path,St);
+	ec = ((manager*)base)->p_sftp->getstat(path,St);
+	//ec = p_sftp->getstat(path,St);
 	if(ec<0){
 		return -1;
 	}
@@ -170,9 +174,11 @@ int file::fopen(){
 		//cacheがまだ新しいならuptodateをtrueに
 		uptodate = (St.st.st_mtime <= Sc.mtime);
 	}
-	p_cache->add_stat(path,St.st.st_size,St.st.st_mtime);
+	((manager*)base)->p_cache->add_stat(path,St.st.st_size,St.st.st_mtime);
+	//p_cache->add_stat(path,St.st.st_size,St.st.st_mtime);
 	//open cachefile
-	std::string LocalPath = p_cache->get_location(path);
+	std::string LocalPath = ((manager*)base)->p_cache->get_location(path);
+	//std::string LocalPath = p_cache->get_location(path);
 	fd = open(LocalPath.c_str(),O_RDWR|O_CREAT, 0644);
 	return 0;
 }
@@ -183,10 +189,12 @@ int file::fclose(){
 	close(fd);
 	//upload後のstatをcacheに追加
 	ec = p_sftp->getstat(path,St);
+	ec = ((manager*)base)->p_sftp->getstat(path,St);
 	if(ec<0){
 		return -1;
 	}
-	p_cache->add_stat(path,St.st.st_size,St.st.st_mtime);
+	((manager*)base)->p_cache->add_stat(path,St.st.st_size,St.st.st_mtime);
+	//p_cache->add_stat(path,St.st.st_size,St.st.st_mtime);
 	fd = 0;
 	return 0;
 }
@@ -238,7 +246,7 @@ int file::fwrite(const char* buf,int offset,int size){
 		if(ind>=blocks.size()){
 			std::cout << "file::write block index over, add blocks " << path << std::endl;
 			for(int i=blocks.size();i<ind;i++){
-				b = new block(p_sftp,p_cache,&path,i);
+				b = new block(this,p_sftp,p_cache,&path,i);
 				blocks.push_back(b);
 			}
 		}

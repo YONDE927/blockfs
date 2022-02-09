@@ -9,27 +9,29 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "Sftp.h"
-#include "Block.h"
-#include "Cache.h"
+#include "Sftp.hpp"
+#include "Block.hpp"
+#include "Cache.hpp"
+#include "base.hpp"
 
-class attribute {
+class manager;
+
+class attribute:public stdobj{
 private:
 	sftp* p_sftp;
 	struct stat* st;
 public:
 	std::string path;
 	std::string name;
-
-	attribute(sftp* _p_sftp,std::string _path);
-	attribute(sftp* _p_sftp,std::string _path,struct stat &_st);
+	attribute(stdobj* parent,sftp* _p_sftp,std::string _path);
+	attribute(stdobj* parent,sftp* _p_sftp,std::string _path,struct stat &_st);
 	~attribute();
 	struct stat getattr(int remote=0);
 	void print();
 	int download();
 };
 
-class entry {
+class entry:public stdobj{
 protected:
 	std::string path;
 	int offset;
@@ -38,8 +40,8 @@ protected:
 	cache* p_cache;
 	int flag;
 public:
-	entry(std::string _path,sftp *_p_sftp,cache *_p_cache);
-	entry(std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache);
+	entry(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache);
+	entry(stdobj* parent,std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache);
 	struct stat getattr(int remote=0);
 	virtual ~entry();
 };
@@ -48,8 +50,8 @@ class directory: public entry{
 private:
 	std::list<attribute*> attrs;
 public:
-	directory(std::string _path,sftp *_p_sftp,cache *_p_cache);
-	directory(std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache);
+	directory(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache);
+	directory(stdobj* parent,std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache);
 	~directory();
 	std::list<attribute*> readdir();
 	void ls();
@@ -64,8 +66,8 @@ private:
 	int fd;
 	int lock;
 public:
-	file(std::string _path,sftp *_p_sftp,cache *_p_cache);
-	file(std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache);
+	file(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache);
+	file(stdobj* parent,std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache);
 	~file();
 	int fopen();
 	int fclose();

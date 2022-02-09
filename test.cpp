@@ -1,8 +1,8 @@
-#include "Sftp.h"
-#include "Block.h"
-#include "Entry.h"
-#include "Manager.h"
-#include "Cache.h"
+#include "Sftp.hpp"
+#include "Block.hpp"
+#include "Entry.hpp"
+#include "Manager.hpp"
+#include "Cache.hpp"
 
 #define DEST "/home/yonde/Documents/blockfs/build/hello"
 #define PATH "/hello/hello.c"

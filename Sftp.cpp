@@ -1,4 +1,4 @@
-#include "Sftp.h"
+#include "Sftp.hpp"
 
 #define CONFIGPATH "/home/yonde/Documents/blockfs/build/config/sshconfig"
 
