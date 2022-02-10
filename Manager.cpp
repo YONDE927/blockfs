@@ -3,12 +3,15 @@
 manager::manager(sftp* _p_sftp,cache* _p_cache):stdobj(NULL){
 	p_sftp=_p_sftp;
 	p_cache=_p_cache;
+	p_forecache= new forecache(this);
+	p_forecache->loopstart();
 }
 
 manager::~manager(){
 	for(auto itr=entrymap.begin();itr!=entrymap.end();++itr){
 		delete itr->second;
 	}
+	delete p_forecache;
 	delete p_sftp;
 	delete p_cache;
 }
@@ -36,9 +39,9 @@ entry* manager::load(std::string path){
 		return NULL;
 	}
 	if(St.type==1){
-		et = new file(this,path,p_sftp,p_cache);
+		et = new file(this,path);
 	}else if(St.type==2){
-		et = new directory(this,path,p_sftp,p_cache);
+		et = new directory(this,path);
 	}else{
 		std::cout << "St.type not match" << path << std::endl;
 	}

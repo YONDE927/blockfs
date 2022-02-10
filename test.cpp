@@ -84,7 +84,12 @@ int test_block(){
 
 	memset(buf,0,sizeof(buf));
 	fd = open(localpath.c_str(),O_RDWR|O_CREAT, 0644);
-	block *b1 = new block(p_connector,p_cache,&path,0);
+
+	//parent manager and file
+	manager* p_manager = new manager(p_connector,p_cache);
+	file* fi = new file(p_manager,path);
+	block *b1 = new block(fi,0);
+	//block *b1 = new block(p_connector,p_cache,&path,0);
 	if(b1==NULL){
 		return -1;
 	}
@@ -98,8 +103,8 @@ int test_block(){
 	buf[31]='\0';
 	std::cout<< "block read " << nread << "\n" << buf<< '\n'  << std::endl;
 	delete b1;
-	delete p_connector;
-	delete p_cache;
+	delete fi;
+	delete p_manager;
 	return 0;
 }
 
@@ -108,35 +113,40 @@ int test_entry(){
 	cache* p_cache = new cache;
 	std::string path = PATH;
 
+	//parent
+	manager* p_manager = new manager(p_connector,p_cache);
+	file* fi = new file(p_manager,path);
+
 	//attribute
-	attribute* a1 = new attribute(p_connector,path);
+	attribute* a1 = new attribute(fi,path);
+	//attribute* a1 = new attribute(p_connector,path);
 	struct stat s1 = a1->getattr();
 	std::cout << "\ns1.st_size : " << s1.st_size << '\n'  << std::endl;
 	printstat(s1);
 
 	//entry
-	entry* e1 = new entry(path,p_connector,p_cache);
+	entry* e1 = new entry(p_manager,path);
 	if(e1->getattr().st_size<0){
 		return -1;
 	}
 
 	//directory
 	std::string path2 = PATH2;
-	directory* d1 = new directory(path2,p_connector,p_cache);
+	directory* d1 = new directory(p_manager,path2);
 	d1->ls();
 
 	//file
 	int wsize,size = 20;
 	char buf[size];
 	char wbuf[] = "1/1813:00";
-	file* fi = new file(PATH,p_connector,p_cache);
-	fi->fopen();
-	fi->fread(buf,0,size);
+	file* fi2 = new file(p_manager,PATH);
+	fi2->fopen();
+	fi2->fread(buf,0,size);
 	buf[size-1]='\0';
 	std::cout << '\n'  << buf << '\n' << std::endl;
 	wsize = fi->fwrite(wbuf,0,sizeof(wbuf)-1);
 	std::cout << "write size " << wsize << std::endl;
-	fi->fread(buf,0,size);
+	fi2->fread(buf,0,size);
 	buf[size-1]='\0';
 	std::cout << '\n'  << buf << '\n' << std::endl;
 	fi->fclose();
@@ -145,8 +155,8 @@ int test_entry(){
 	delete a1;
 	delete e1;
 	delete fi;
-	delete p_connector;
-	delete p_cache;
+	delete fi2;
+	delete p_manager;
 	return 0;
 }
 
@@ -190,5 +200,14 @@ int test_cache(){
 	std::string location = p_cache->get_location(path);
 	p_cache->add_block(path,index);
 	p_cache->find_block(path,index,bc);
+	//ahead cache
+	p_cache->add_history("/null/null/file.txt",256);
+	p_cache->add_history("/null/null/file.txt",256);
+	p_cache->add_history("/null/null/file.txt",256);
+	p_cache->add_history("/null/file1.png",128);
+	p_cache->add_history("/null/file1.png",128);
+	p_cache->add_history("/null/null/file3.txt",64);
+	cout << p_cache->find_max("path") << endl;
+	cout << p_cache->find_max("ext") << endl;
 	return 0;
 }

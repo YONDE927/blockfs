@@ -22,14 +22,11 @@ class file;
 
 class block:public stdobj{
 private:
-	sftp* p_sftp;
-	cache* p_cache;
-	std::string *p_path;
 	char* data;
 	int index;
 	int bsize{0};
 public:
-	block(stdobj* parent,sftp* _p_sftp,cache* _p_cache,std::string *_p_path,int _index);
+	block(stdobj* parent,int _index);
 	~block();
 	int download();
 	int upload();

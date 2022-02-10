@@ -17,6 +17,11 @@ void* b_init(struct fuse_conn_info *conn,struct fuse_config *fc){
     return fuse_get_context()->private_data;
 }
 
+void b_destroy(void* private_data){
+    std::cout << "blockfs finish" << std::endl;
+    delete p_manager;
+}
+
 int b_getattr(const char *path,struct stat *stbuf,struct fuse_file_info *fi){
 	std::cout<< "\n"  << "b_getattr " << path << std::endl;
 	struct stat st;
@@ -133,7 +138,8 @@ struct fuse_operations b_oper = {
 	//.opendir = b_opendir,
 	.readdir = b_readdir,
 	//.releasedir = b_closedir,
-	.init = b_init
+	.init = b_init,
+	.destroy = b_destroy
 };
 
 int main(int argc, char *argv[])

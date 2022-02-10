@@ -10,6 +10,7 @@
 #include <list>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <mutex>
 
 
 std::string add_path(std::string root,std::string path);
@@ -26,6 +27,7 @@ private:
 	std::string ConfigPath,host,username,password,sftproot;
 	ssh_session m_ssh;
 	sftp_session m_sftp;
+	std::mutex mtx;
 	int loadoption();
 public:
 	sftp();

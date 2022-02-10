@@ -23,8 +23,10 @@ private:
 public:
 	std::string path;
 	std::string name;
-	attribute(stdobj* parent,sftp* _p_sftp,std::string _path);
-	attribute(stdobj* parent,sftp* _p_sftp,std::string _path,struct stat &_st);
+	attribute(stdobj* parent,std::string path);
+	//attribute(stdobj* parent,sftp* _p_sftp,std::string _path);
+	attribute(stdobj* parent,std::string path,struct stat &_st);
+	//attribute(stdobj* parent,sftp* _p_sftp,std::string _path,struct stat &_st);
 	~attribute();
 	struct stat getattr(int remote=0);
 	void print();
@@ -33,15 +35,17 @@ public:
 
 class entry:public stdobj{
 protected:
-	std::string path;
 	int offset;
 	attribute* stat;
-	sftp* p_sftp;
-	cache* p_cache;
+	//sftp* p_sftp;
+	//cache* p_cache;
 	int flag;
 public:
-	entry(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache);
-	entry(stdobj* parent,std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache);
+	std::string path;
+	entry(stdobj* parent,std::string _path);
+	//entry(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache);
+	entry(stdobj* parent,std::string _path,struct stat &_st);
+	//entry(stdobj* parent,std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache);
 	struct stat getattr(int remote=0);
 	virtual ~entry();
 };
@@ -50,8 +54,10 @@ class directory: public entry{
 private:
 	std::list<attribute*> attrs;
 public:
-	directory(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache);
-	directory(stdobj* parent,std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache);
+	directory(stdobj* parent,std::string _path);
+	//directory(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache);
+	directory(stdobj* parent,std::string _path,struct stat &_st);
+	//directory(stdobj* parent,std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache);
 	~directory();
 	std::list<attribute*> readdir();
 	void ls();
@@ -66,8 +72,10 @@ private:
 	int fd;
 	int lock;
 public:
-	file(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache);
-	file(stdobj* parent,std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache);
+	file(stdobj* parent,std::string _path);
+	//file(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache);
+	file(stdobj* parent,std::string _path,struct stat &_st);
+	//file(stdobj* parent,std::string _path,struct stat &_st,sftp *_p_sftp,cache *_p_cache);
 	~file();
 	int fopen();
 	int fclose();

@@ -12,11 +12,13 @@
 #include "Entry.hpp"
 #include "Cache.hpp"
 #include "base.hpp"
+#include "forecache.hpp"
 #include <bitset>
 
 class manager:public stdobj{
 private:
 	std::map<std::string,entry*> entrymap;
+	forecache* p_forecache;
 public:
 	sftp* p_sftp;
 	cache* p_cache;

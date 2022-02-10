@@ -101,6 +101,7 @@ int sftp::getstat(std::string path,Stat &attr){
 	sftp_attributes sfbuf;
 	std::string p = add_path(sftproot,path);
 	std::cout << "sftp stat " << p << std::endl;
+	std::lock_guard<std::mutex> lock(mtx);
 	sfbuf = sftp_stat(m_sftp,p.c_str());
 	if(!sfbuf){
 		std::cerr << "sftp stat failed " << p << std::endl;
@@ -117,6 +118,7 @@ std::list<Stat> sftp::getdir(std::string path){
 	sftp_dir dir;
 	std::string p = add_path(sftproot,path);
 	std::cerr << "sftp getdir " << p << std::endl;
+	std::lock_guard<std::mutex> lock(mtx);
 	dir = sftp_opendir(m_sftp,p.c_str());
 	if(!dir){
 		std::cerr << "sftp getdir open " << p << " failed" << std::endl;
@@ -142,6 +144,7 @@ int sftp::fulldownload(std::string from, std::string dest){
 	file = sftp_open(m_sftp,p.c_str(), O_RDONLY,0);
 	ofs.open(dest,std::ios_base::out|std::ios_base::binary|std::ios_base::trunc);
 	for(;;){
+		std::lock_guard<std::mutex> lock(mtx);
 		nbytes = sftp_read(file,buffer,sizeof(buffer));
 		if(nbytes==0){
 			break;
@@ -164,6 +167,7 @@ int sftp::download(std::string path,char* buf,int offset,int size){
 	sftp_file file;
 	int nbytes;
 	std::string p = add_path(sftproot,path);
+	std::lock_guard<std::mutex> lock(mtx);
 	file = sftp_open(m_sftp,p.c_str(), O_RDONLY,0);
 	if(sftp_seek(file, offset)<0){
 		std::cerr << "sftp_seek error" << std::endl;
@@ -185,6 +189,7 @@ int sftp::upload(std::string path,char* buf,int offset,int size){
 	int nbytes;
 	std::string p = add_path(sftproot,path);
 	std::cerr << "sftp upload to " << p << " data " << buf << " offset " << offset << " size " << size << std::endl;
+	std::lock_guard<std::mutex> lock(mtx);
 	file = sftp_open(m_sftp,p.c_str(),O_WRONLY,0);
 	if(sftp_seek(file, offset)<0){
 		std::cerr << "sftp_seek error" << std::endl;

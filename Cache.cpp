@@ -10,6 +10,7 @@ cache::cache(){
 	p_session->sql("USE cachedb").execute();
 	p_session->sql("CREATE TABLE IF NOT EXISTS stats(path TEXT,size INT,mtime INT,PRIMARY KEY(path(256)))").execute();
 	p_session->sql("CREATE TABLE IF NOT EXISTS blocks(path TEXT,block_index INT,location TEXT,PRIMARY KEY(path(256),block_index))").execute();
+	p_session->sql("CREATE TABLE IF NOT EXISTS history(time INT,path TEXT,dir TEXT,name TEXT,ext TEXT,size INT)").execute();
 }
 
 int cache::loadoption(){
@@ -42,6 +43,7 @@ int cache::add_stat(std::string path,int size,int mtime){
 	insert += (path +"',"s + std::to_string(size) + ","s + std::to_string(mtime) + ")"s);
 	std::string update = "ON DUPLICATE KEY UPDATE size=" + std::to_string(size) + ", mtime="s + std::to_string(mtime);
 	cout << insert + update << endl;
+	std::lock_guard<std::mutex> lock(mtx);
 	p_session->sql(insert + update).execute();
 	return 0;
 }
@@ -49,6 +51,7 @@ int cache::add_stat(std::string path,int size,int mtime){
 int cache::find_stat(std::string path,StatCache &sc){
 	std::string select = "SELECT * FROM stats WHERE path = '" + path + "'"s;
 	cout << select << endl;
+	std::lock_guard<std::mutex> lock(mtx);
 	auto result = p_session->sql(select).execute();
 	Row row = result.fetchOne();
 	if(row){
@@ -67,6 +70,7 @@ int cache::add_block(std::string path,int index){
 	std::string insert = "INSERT INTO blocks (path,block_index,location) VALUES('" + path + "',"s + std::to_string(index) + ",'"s + location + "')";
 	std::string update = "ON DUPLICATE KEY UPDATE location='" + location + "'"s;
 	cout << insert+update << endl;
+	std::lock_guard<std::mutex> lock(mtx);
 	p_session->sql(insert + update).execute();
 	return 0;
 }
@@ -74,6 +78,7 @@ int cache::add_block(std::string path,int index){
 int cache::find_block(std::string path,int index,BlockCache &bc){
 	std::string select = "SELECT * FROM blocks WHERE path='" + path + "'"s + " AND block_index=" + std::to_string(index);
 	cout << select << endl;
+	std::lock_guard<std::mutex> lock(mtx);
 	auto result = p_session->sql(select).execute();
 	cout << "exed" << endl;
 	Row row = result.fetchOne();
@@ -99,3 +104,44 @@ std::string cache::get_location(std::string path){
 	}
 	return cache_dir + path;
 }
+
+int cache::add_history(std::string path,int size)
+{
+	std::time_t now = std::time(NULL);
+	//get name of file
+	std::filesystem::path p = path;
+	std::string ext = p.extension();
+	std::string dir = p.parent_path();
+	std::string name = p.filename();
+	std::string location = this->get_location(path);
+	std::string insert = "INSERT INTO history (time,path,dir,name,ext,size) VALUES(" + std::to_string(now) + ",'"s + path + "','"s + dir + "','"s + name + "','"s + ext + "',"s + std::to_string(size) + ")"s;
+	cout << insert << endl;
+	std::lock_guard<std::mutex> lock(mtx);
+	p_session->sql(insert).execute();
+	return 0;
+}
+
+int cache::count_history(std::string key,std::string col)
+{
+	std::string select = "SELECT "+col+" FROM history WHERE " + col + "='" + key + "'"s;
+	cout << select << endl;
+	std::lock_guard<std::mutex> lock(mtx);
+	auto result = p_session->sql(select).execute();
+	int count = result.count();
+	return 0;
+}
+
+std::string cache::find_max(std::string col)
+{
+    std::string select = "select " + col + ",count("+col+") cnt from history group by "+col+" order by cnt desc;";
+    cout << select << endl;
+    std::lock_guard<std::mutex> lock(mtx);
+    auto result = p_session->sql(select).execute();
+    Row row = result.fetchOne();
+    if(row){
+	return std::string(row[0]);
+    }else{
+	return std::string(NULL);
+    }
+}
+

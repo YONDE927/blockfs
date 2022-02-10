@@ -2,10 +2,7 @@
 #include "Entry.hpp"
 #include "Manager.hpp"
 
-block::block(stdobj* parent,sftp* _p_sftp,cache* _p_cache,std::string *_p_path,int _index):stdobj(parent){
-	p_sftp=_p_sftp;
-	p_cache=_p_cache;
-	p_path=_p_path;
+block::block(stdobj* parent,int _index):stdobj(parent){
 	index=_index;
 	data=NULL;
 }
@@ -22,7 +19,7 @@ int block::download(){
 		memset(data,0,BLOCK_SIZE);
 	}
 	offset=BLOCK_SIZE*index;
-	nread=((manager*)base)->p_sftp->download(*p_path,data,offset,BLOCK_SIZE);
+	nread=((manager*)base)->p_sftp->download(((file*)parent)->path,data,offset,BLOCK_SIZE);
 	//nread=p_sftp->download(*p_path,data,offset,BLOCK_SIZE);
 	if(nread<=0){
 		std::cerr << "sftp->download fail" << std::endl;
@@ -38,7 +35,7 @@ int block::upload(){
 	offset=BLOCK_SIZE*index;
 	//std::cout << "uploading " << data << std::endl;
 	//std::cout << "size of block is " << strlen(data) << std::endl;
-	nwritten=((manager*)base)->p_sftp->upload(*p_path,data,offset,strlen(data));
+	nwritten=((manager*)base)->p_sftp->upload(((file*)parent)->path,data,offset,strlen(data));
 	//nwritten=p_sftp->upload(*p_path,data,offset,strlen(data));
 	if(nwritten<=0){
 		std::cerr << "block::upload sftp->upload fail" << std::endl;
@@ -53,7 +50,7 @@ int block::bread(char* buf,int offset,int size,bool uptodate,int cachefd){
 	BlockCache bc;
 	//load
 	if(data==NULL){
-		if(uptodate & (((manager*)base)->p_cache->find_block(*p_path,index,bc)==0)){
+		if(uptodate & (((manager*)base)->p_cache->find_block(((file*)parent)->path,index,bc)==0)){
 		//if(uptodate & (p_cache->find_block(*p_path,index,bc)==0)){
 			this->lload(cachefd);
 		}else{
@@ -64,7 +61,7 @@ int block::bread(char* buf,int offset,int size,bool uptodate,int cachefd){
 				std::cout << "block::bread block ldown failed" << std::endl;
 			}
 			//add cache
-			((manager*)base)->p_cache->add_block(*p_path,index);
+			((manager*)base)->p_cache->add_block(((file*)parent)->path,index);
 			//p_cache->add_block(*p_path,index);
 		}
 	}
@@ -92,14 +89,14 @@ int block::bwrite(const char* buf,int offset,int size,bool uptodate,int cachefd)
 	BlockCache bc;
 	//load
 	if(data==NULL){
-		if(uptodate & (((manager*)base)->p_cache->find_block(*p_path,index,bc)==0)){
+		if(uptodate & (((manager*)base)->p_cache->find_block(((file*)parent)->path,index,bc)==0)){
 		//if(uptodate & (p_cache->find_block(*p_path,index,bc)==0)){
 			this->lload(cachefd);
 		}else{
 			dsize = this->download();
 			//write cachefile later
 			//add cache
-			p_cache->add_block(*p_path,index);
+			((manager*)base)->p_cache->add_block(((file*)parent)->path,index);
 		}
 	}
 	//write
