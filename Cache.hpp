@@ -1,6 +1,6 @@
 #ifndef CACHE_H
 #define CACHE_H
-#include <mysql-cppconn-8/mysqlx/xdevapi.h>
+#include <mariadb/conncpp.hpp>
 #include <iostream>
 #include <fstream>
 #include <list>
@@ -13,7 +13,6 @@ using ::std::cout;
 using ::std::endl;
 using std::string;
 using namespace std::string_literals;
-using namespace ::mysqlx;
 
 struct StatCache{
 	std::string path;
@@ -29,11 +28,15 @@ struct BlockCache{
 
 class cache{
 private: 
-	Session* p_session;
+	//std::unique_ptr<sql::Driver> driver;
+	sql::Driver *driver;
+	//std::unique_ptr<sql::Connection> p_session;
+	sql::Connection *p_session;
 	std::string cache_dir,ConfigPath,host,username,password;
 	std::mutex mtx;
 public: 
 	cache();
+	~cache();
 	int loadoption();
 	int add_stat(std::string path,int size,int mtime);
 	int find_stat(std::string path,StatCache &sc);

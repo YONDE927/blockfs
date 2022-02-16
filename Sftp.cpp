@@ -92,9 +92,11 @@ sftp::sftp(){
 }
 
 sftp::~sftp(){
+	std::cout << "deleting sftp" << std::endl;
 	sftp_free(m_sftp);
 	ssh_disconnect(m_ssh);
 	ssh_free(m_ssh);
+	std::cout << "finish delete sftp" << std::endl;
 }
 
 int sftp::getstat(std::string path,Stat &attr){

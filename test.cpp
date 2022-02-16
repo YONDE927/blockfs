@@ -22,12 +22,12 @@ int main(){
 	if(test_sftp()==0){
 		std::cout << "sftp clear" << std::endl;
 	}
-	if(test_block()==0){
-		std::cout << "block clear" << std::endl;
-	}
-	if(test_entry()==0){
-		std::cout << "entry clear" << std::endl;
-	}
+	//if(test_block()==0){
+	//	std::cout << "block clear" << std::endl;
+	//}
+	//if(test_entry()==0){
+	//	std::cout << "entry clear" << std::endl;
+	//}
 	if(test_manager()==0){
 		std::cout << "manager clear" << std::endl;
 	}
@@ -183,6 +183,8 @@ int test_manager(){
 	}
 	std::cout << "entrymap size : " << man->size() << std::endl;
 	delete man;
+	delete p_cache;
+	delete p_connector;
 	return 0;
 }
 
@@ -197,6 +199,7 @@ int test_cache(){
 	cache* p_cache = new cache();
 	p_cache->add_stat(path,size,mtime);
 	p_cache->find_stat(path,sc);
+	cout << "stat table query ok" << endl;
 	std::string location = p_cache->get_location(path);
 	p_cache->add_block(path,index);
 	p_cache->find_block(path,index,bc);

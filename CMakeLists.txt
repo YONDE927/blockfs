@@ -17,7 +17,7 @@ add_library(sftp STATIC Sftp.cpp)
 target_link_libraries(sftp PRIVATE ssh)
 
 add_library(cache STATIC Cache.cpp)
-target_link_libraries(cache mysqlcppconn8)
+target_link_libraries(cache mariadbcpp)
 
 add_library(forecache STATIC forecache.cpp)
 target_link_libraries(forecache pthread)

@@ -8,12 +8,14 @@ manager::manager(sftp* _p_sftp,cache* _p_cache):stdobj(NULL){
 }
 
 manager::~manager(){
-	for(auto itr=entrymap.begin();itr!=entrymap.end();++itr){
-		delete itr->second;
-	}
-	delete p_forecache;
-	delete p_sftp;
-	delete p_cache;
+    std::cout << "deleting manager" << std::endl;
+    for(auto itr=entrymap.begin();itr!=entrymap.end();++itr){
+	std::cout << "deleting entry: " << itr->first << std::endl;
+	delete itr->second;
+    }
+    std::cout << "deleting p_forecache" << std::endl;
+    delete p_forecache;
+    std::cout << "finish deleting manager" << std::endl;
 }
 
 entry* manager::lookup(std::string path){

@@ -1,16 +1,41 @@
 #include "Cache.hpp"
+#include <mariadb/conncpp/Connection.hpp>
+#include <mariadb/conncpp/Driver.hpp>
+#include <mariadb/conncpp/PreparedStatement.hpp>
 
 #define CONFIGPATH "/home/yonde/Documents/blockfs/build/config/cacheconfig"
 
 cache::cache(){
 	this->loadoption();
-	cout << host << username << password << endl;
-	SessionSettings settings(SessionOption::HOST,host,SessionOption::USER,username,SessionOption::PWD,password.c_str());
-	p_session = new Session(settings);
-	p_session->sql("USE cachedb").execute();
-	p_session->sql("CREATE TABLE IF NOT EXISTS stats(path TEXT,size INT,mtime INT,PRIMARY KEY(path(256)))").execute();
-	p_session->sql("CREATE TABLE IF NOT EXISTS blocks(path TEXT,block_index INT,location TEXT,PRIMARY KEY(path(256),block_index))").execute();
-	p_session->sql("CREATE TABLE IF NOT EXISTS history(time INT,path TEXT,dir TEXT,name TEXT,ext TEXT,size INT)").execute();
+	cout << host << " " << username << " "<< password << endl;
+	//connect db
+	sql::SQLString url = "jdbc:mariadb://" + host + ":3306/cachedb";
+	sql::Properties props({
+		{"user",username},
+		{"password",password}
+		});
+	std::unique_ptr<sql::Driver> dp(sql::mariadb::get_driver_instance());
+	driver = sql::mariadb::get_driver_instance();
+	cout << driver->getName() << endl;
+	p_session = driver->connect(url,props);
+	if(p_session==NULL){
+	    std::cerr << "can't connect to db" << std::endl;
+	}
+	cout << p_session->getUsername() << " " << p_session->getHostname() << endl;
+	cout << "create session" << endl;
+	//check existence of table
+	std::unique_ptr<sql::Statement> stmt(p_session->createStatement());
+	stmt->executeQuery("USE cachedb");
+	stmt->execute("CREATE TABLE IF NOT EXISTS stats(path TEXT,size INT,mtime INT,PRIMARY KEY(path(256)))");
+	stmt->execute("CREATE TABLE IF NOT EXISTS blocks(path TEXT,block_index INT,location TEXT,PRIMARY KEY(path(256),block_index))");
+	stmt->execute("CREATE TABLE IF NOT EXISTS history(time INT,path TEXT,dir TEXT,name TEXT,ext TEXT,size INT)");
+	cout << "use cachedb and stats blocks history" << endl;
+}
+
+cache::~cache(){
+    cout << "deleting cache" << endl;
+    //delete p_session;
+    //delete driver;
 }
 
 int cache::loadoption(){
@@ -39,59 +64,65 @@ int cache::loadoption(){
 }
 
 int cache::add_stat(std::string path,int size,int mtime){
-	std::string insert = "INSERT INTO stats (path,size,mtime) VALUES('";
-	insert += (path +"',"s + std::to_string(size) + ","s + std::to_string(mtime) + ")"s);
-	std::string update = "ON DUPLICATE KEY UPDATE size=" + std::to_string(size) + ", mtime="s + std::to_string(mtime);
-	cout << insert + update << endl;
-	std::lock_guard<std::mutex> lock(mtx);
-	p_session->sql(insert + update).execute();
-	return 0;
+    std::lock_guard<std::mutex> lock(mtx);
+    std::shared_ptr<sql::PreparedStatement> stmt(p_session->prepareStatement(
+		"REPLACE INTO stats (path,size,mtime) VALUES(?,?,?)"
+		));
+    stmt->setString(1,sql::SQLString(path));
+    stmt->setInt(2,size);
+    stmt->setInt(3,mtime);
+    stmt->executeUpdate();
+    return 0;
 }
 
 int cache::find_stat(std::string path,StatCache &sc){
-	std::string select = "SELECT * FROM stats WHERE path = '" + path + "'"s;
-	cout << select << endl;
-	std::lock_guard<std::mutex> lock(mtx);
-	auto result = p_session->sql(select).execute();
-	Row row = result.fetchOne();
-	if(row){
-		sc.path=path;
-		sc.size=row[1];
-		sc.mtime=row[2];
-		return 0;
-	}else{
-		cout << "not found in cache" << endl;
-		return -1;
-	}
+    std::lock_guard<std::mutex> lock(mtx);
+    std::shared_ptr<sql::PreparedStatement> stmt(p_session->prepareStatement(
+		"SELECT * FROM stats WHERE path = ?"
+		));
+    stmt->setString(1,path);
+    std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+    if(res->next()){
+	sc.path=res->getString(1);
+	sc.size=res->getInt(2);
+	sc.mtime=res->getInt(3);
+    }else{
+	cout << "not found in cache" << endl;
+	return -1;
+    }
+    return 0;
 }
 
 int cache::add_block(std::string path,int index){
-	std::string location = this->get_location(path);
-	std::string insert = "INSERT INTO blocks (path,block_index,location) VALUES('" + path + "',"s + std::to_string(index) + ",'"s + location + "')";
-	std::string update = "ON DUPLICATE KEY UPDATE location='" + location + "'"s;
-	cout << insert+update << endl;
-	std::lock_guard<std::mutex> lock(mtx);
-	p_session->sql(insert + update).execute();
-	return 0;
+    std::string location = this->get_location(path);
+    std::lock_guard<std::mutex> lock(mtx);
+    std::shared_ptr<sql::PreparedStatement> stmt(p_session->prepareStatement(
+		"REPLACE INTO blocks (path,block_index,location) VALUES (?,?,?)"
+		));
+    stmt->setString(1,sql::SQLString(path));
+    stmt->setInt(2,index);
+    stmt->setString(3,sql::SQLString(location));
+    stmt->executeUpdate();
+    return 0;
 }
 
 int cache::find_block(std::string path,int index,BlockCache &bc){
-	std::string select = "SELECT * FROM blocks WHERE path='" + path + "'"s + " AND block_index=" + std::to_string(index);
-	cout << select << endl;
-	std::lock_guard<std::mutex> lock(mtx);
-	auto result = p_session->sql(select).execute();
-	cout << "exed" << endl;
-	Row row = result.fetchOne();
-	if(row){
-		cout << row[0] << row[1] << row[2] << endl;
-		bc.path = path;
-		bc.index = index;
-		bc.location = std::string(row[2]);
-		return 0;
-	}else{
-		cout << index << " block no cached" << endl;
-		return -1;
-	}
+    std::lock_guard<std::mutex> lock(mtx);
+    std::shared_ptr<sql::PreparedStatement> stmt(p_session->prepareStatement(
+		"SELECT * FROM blocks WHERE path = ? AND block_index = ?"
+		));
+    stmt->setString(1,path);
+    stmt->setInt(2,index);
+    std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+    if(res->next()){
+	bc.path=res->getString(1);
+	bc.index=res->getInt(2);
+	bc.location=res->getString(3);
+    }else{
+	cout << index << "block no cached" << endl;
+	return -1;
+    }
+    return 0;
 }
 
 std::string cache::get_location(std::string path){
@@ -107,39 +138,51 @@ std::string cache::get_location(std::string path){
 
 int cache::add_history(std::string path,int size)
 {
-	std::time_t now = std::time(NULL);
-	//get name of file
-	std::filesystem::path p = path;
-	std::string ext = p.extension();
-	std::string dir = p.parent_path();
-	std::string name = p.filename();
-	std::string location = this->get_location(path);
-	std::string insert = "INSERT INTO history (time,path,dir,name,ext,size) VALUES(" + std::to_string(now) + ",'"s + path + "','"s + dir + "','"s + name + "','"s + ext + "',"s + std::to_string(size) + ")"s;
-	cout << insert << endl;
-	std::lock_guard<std::mutex> lock(mtx);
-	p_session->sql(insert).execute();
-	return 0;
+    std::time_t now = std::time(NULL);
+    //get name of file
+    std::filesystem::path p = path;
+    std::string ext = p.extension();
+    std::string dir = p.parent_path();
+    std::string name = p.filename();
+    std::string location = this->get_location(path);
+    std::lock_guard<std::mutex> lock(mtx);
+    std::shared_ptr<sql::PreparedStatement> stmt(p_session->prepareStatement(
+		"INSERT INTO history (time,path,dir,name,ext,size) VALUES (?,?,?,?,?,?)"
+		));
+    stmt->setInt(1,now);
+    stmt->setString(2,sql::SQLString(path));
+    stmt->setString(3,sql::SQLString(dir));
+    stmt->setString(4,sql::SQLString(name));
+    stmt->setString(5,sql::SQLString(ext));
+    stmt->setInt(6,size);
+    stmt->executeUpdate();
+    return 0;
 }
 
 int cache::count_history(std::string key,std::string col)
 {
-	std::string select = "SELECT "+col+" FROM history WHERE " + col + "='" + key + "'"s;
-	cout << select << endl;
-	std::lock_guard<std::mutex> lock(mtx);
-	auto result = p_session->sql(select).execute();
-	int count = result.count();
-	return 0;
+    std::lock_guard<std::mutex> lock(mtx);
+    std::shared_ptr<sql::PreparedStatement> stmt(p_session->prepareStatement(
+		"SELECT * FROM stats WHERE ? = ?"
+		));
+    stmt->setString(1,col);
+    stmt->setString(2,key);
+    std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+    return res->getFetchSize();
 }
 
 std::string cache::find_max(std::string col)
 {
-    std::string select = "select " + col + ",count("+col+") cnt from history group by "+col+" order by cnt desc;";
-    cout << select << endl;
     std::lock_guard<std::mutex> lock(mtx);
-    auto result = p_session->sql(select).execute();
-    Row row = result.fetchOne();
-    if(row){
-	return std::string(row[0]);
+    std::shared_ptr<sql::PreparedStatement> stmt(p_session->prepareStatement(
+		"SELECT ?,COUNT(?) cnt FROM history GROUP BY ? ORDER BY cnt DESC"
+		));
+    stmt->setString(1,col);
+    stmt->setString(2,col);
+    stmt->setString(3,col);
+    std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+    if(res->next()){
+	return std::string(res->getString(1));
     }else{
 	return std::string(NULL);
     }
