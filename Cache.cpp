@@ -14,7 +14,7 @@ cache::cache(){
 		{"user",username},
 		{"password",password}
 		});
-	std::unique_ptr<sql::Driver> dp(sql::mariadb::get_driver_instance());
+	//std::unique_ptr<sql::Driver> dp(sql::mariadb::get_driver_instance());
 	driver = sql::mariadb::get_driver_instance();
 	cout << driver->getName() << endl;
 	p_session = driver->connect(url,props);
@@ -161,30 +161,32 @@ int cache::add_history(std::string path,int size)
 
 int cache::count_history(std::string key,std::string col)
 {
+    int i=0;
     std::lock_guard<std::mutex> lock(mtx);
     std::shared_ptr<sql::PreparedStatement> stmt(p_session->prepareStatement(
-		"SELECT * FROM stats WHERE ? = ?"
+		"SELECT * FROM history WHERE " + col + " = ?"
 		));
     stmt->setString(1,col);
     stmt->setString(2,key);
     std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
-    return res->getFetchSize();
+    while(res->next()){
+	i++;
+    }
+    return i;
 }
 
 std::string cache::find_max(std::string col)
 {
     std::lock_guard<std::mutex> lock(mtx);
-    std::shared_ptr<sql::PreparedStatement> stmt(p_session->prepareStatement(
-		"SELECT ?,COUNT(?) cnt FROM history GROUP BY ? ORDER BY cnt DESC"
+    std::shared_ptr<sql::Statement> stmt(p_session->createStatement(
+		//"SELECT ? AS ?, COUNT(*) cnt FROM history GROUP BY ? ORDER BY cnt DESC"
 		));
-    stmt->setString(1,col);
-    stmt->setString(2,col);
-    stmt->setString(3,col);
-    std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+    std::shared_ptr<sql::ResultSet> res(stmt->executeQuery("SELECT " + col + " AS " + col + ", COUNT(*) cnt FROM history GROUP BY " + col + " ORDER BY cnt DESC"));
     if(res->next()){
-	return std::string(res->getString(1));
+	cout << std::string(res->getString(col)) << " " << res->getInt("cnt") << endl;
+	return std::string(res->getString(col));
     }else{
-	return std::string(NULL);
+	return std::string();
     }
 }
 

@@ -28,11 +28,11 @@ int main(){
 	//if(test_entry()==0){
 	//	std::cout << "entry clear" << std::endl;
 	//}
-	if(test_manager()==0){
-		std::cout << "manager clear" << std::endl;
-	}
 	if(test_cache()==0){
 		std::cout << "cache clear" << std::endl;
+	}
+	if(test_manager()==0){
+		std::cout << "manager clear" << std::endl;
 	}
 	return 0;
 }
@@ -212,5 +212,6 @@ int test_cache(){
 	p_cache->add_history("/null/null/file3.txt",64);
 	cout << p_cache->find_max("path") << endl;
 	cout << p_cache->find_max("ext") << endl;
+	delete p_cache;
 	return 0;
 }

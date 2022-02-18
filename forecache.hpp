@@ -1,5 +1,6 @@
 #ifndef FORECACHE_H
 #define FORECACHE_H 
+#include <unistd.h>
 #include "Cache.hpp"
 #include "Sftp.hpp"
 #include "base.hpp"

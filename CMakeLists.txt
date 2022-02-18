@@ -33,5 +33,8 @@ target_link_libraries(manager PRIVATE forecache)
 add_executable(test test.cpp)
 target_link_libraries(test sftp entry manager cache)
 
+add_executable(reset reset.cpp)
+target_link_libraries(reset mariadbcpp)
+
 add_executable(${PROJECT_NAME} blockfs.cpp)
 target_link_libraries(${PROJECT_NAME} fuse3 sftp entry manager cache)

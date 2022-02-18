@@ -23,6 +23,7 @@ int forecache::decidecache()
 	dirname=((manager*)base)->p_cache->find_max("dir");
 	if(dirname!=key){
 	    //dir内ファイル名を取得
+	    cout << "forecache::decidecache getdir " << dirname << endl;
 	    attrs=((manager*)base)->p_sftp->getdir(dirname);
 	    for(auto itr=attrs.begin();itr!=attrs.end();++itr){
 		if((itr->name == ".") or (itr->name == "..")){
@@ -35,6 +36,7 @@ int forecache::decidecache()
 		}
 	    }
 	}
+	sleep(5);
     }
     return 0;
 }
@@ -72,6 +74,7 @@ int forecache::loadtask()
 	    //loadqueueから削除
 	    loadqueue.pop();
 	}
+    sleep(5);
     }
     return 0;
 }
