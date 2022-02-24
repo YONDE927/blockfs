@@ -33,3 +33,7 @@
 
 #directories
 build/*
+rpc/build/*
+
+rpc/__pycache__/*
+*.swp
