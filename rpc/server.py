@@ -8,9 +8,9 @@ files=[("/file1",223),("/file2",445),("/file3",667)]
 
 class UserTasteServicer(usertaste_pb2_grpc.UserTasteServicer):
     def init(self,request,context):
-        return usertaste_pb2.Status(status=200)
+        return usertaste_pb2.Stat(status=200)
     def greet(self,request,context):
-        return usertaste_pb2.Status(status=200)
+        return usertaste_pb2.Stat(status=200)
     def listfile(self,request,context):
         for p,s in files:
             yield usertaste_pb2.File(path=p,size=s)

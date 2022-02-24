@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/yonde/Documents/blockfs/rpc/build",
+  "command": "/usr/bin/c++ -DCARES_STATICLIB -I/home/yonde/Documents/blockfs/rpc/build -isystem /home/yonde/.local/include -std=gnu++11 -o CMakeFiles/ut_grpc_proto.dir/usertaste.grpc.pb.cc.o -c /home/yonde/Documents/blockfs/rpc/build/usertaste.grpc.pb.cc",
+  "file": "/home/yonde/Documents/blockfs/rpc/build/usertaste.grpc.pb.cc"
+},
+{
+  "directory": "/home/yonde/Documents/blockfs/rpc/build",
+  "command": "/usr/bin/c++ -DCARES_STATICLIB -I/home/yonde/Documents/blockfs/rpc/build -isystem /home/yonde/.local/include -std=gnu++11 -o CMakeFiles/ut_grpc_proto.dir/usertaste.pb.cc.o -c /home/yonde/Documents/blockfs/rpc/build/usertaste.pb.cc",
+  "file": "/home/yonde/Documents/blockfs/rpc/build/usertaste.pb.cc"
+}
+]

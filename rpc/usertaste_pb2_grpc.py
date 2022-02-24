@@ -17,12 +17,12 @@ class UserTasteStub(object):
         self.init = channel.unary_unary(
                 '/usertaste.UserTaste/init',
                 request_serializer=usertaste__pb2.User.SerializeToString,
-                response_deserializer=usertaste__pb2.Status.FromString,
+                response_deserializer=usertaste__pb2.Stat.FromString,
                 )
         self.greet = channel.unary_unary(
                 '/usertaste.UserTaste/greet',
                 request_serializer=usertaste__pb2.Want.SerializeToString,
-                response_deserializer=usertaste__pb2.Status.FromString,
+                response_deserializer=usertaste__pb2.Stat.FromString,
                 )
         self.listfile = channel.unary_stream(
                 '/usertaste.UserTaste/listfile',
@@ -58,12 +58,12 @@ def add_UserTasteServicer_to_server(servicer, server):
             'init': grpc.unary_unary_rpc_method_handler(
                     servicer.init,
                     request_deserializer=usertaste__pb2.User.FromString,
-                    response_serializer=usertaste__pb2.Status.SerializeToString,
+                    response_serializer=usertaste__pb2.Stat.SerializeToString,
             ),
             'greet': grpc.unary_unary_rpc_method_handler(
                     servicer.greet,
                     request_deserializer=usertaste__pb2.Want.FromString,
-                    response_serializer=usertaste__pb2.Status.SerializeToString,
+                    response_serializer=usertaste__pb2.Stat.SerializeToString,
             ),
             'listfile': grpc.unary_stream_rpc_method_handler(
                     servicer.listfile,
@@ -93,7 +93,7 @@ class UserTaste(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/usertaste.UserTaste/init',
             usertaste__pb2.User.SerializeToString,
-            usertaste__pb2.Status.FromString,
+            usertaste__pb2.Stat.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -110,7 +110,7 @@ class UserTaste(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/usertaste.UserTaste/greet',
             usertaste__pb2.Want.SerializeToString,
-            usertaste__pb2.Status.FromString,
+            usertaste__pb2.Stat.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
