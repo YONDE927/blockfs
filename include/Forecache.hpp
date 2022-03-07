@@ -3,8 +3,7 @@
 #include <unistd.h>
 #include "Cache.hpp"
 #include "Sftp.hpp"
-#include "base.hpp"
-#include "queue"
+#include "Base.hpp"
 #include "list"
 #include "string"
 #include "thread"
@@ -16,7 +15,7 @@ using namespace std;
 class forecache:public stdobj
 {
 private:
-    queue<std::string> loadqueue;
+    list<std::string> loadqueue;
     bool flag{true};
     std::string key;
     thread loadth;

@@ -12,7 +12,7 @@
 #include "Sftp.hpp"
 #include "Block.hpp"
 #include "Cache.hpp"
-#include "base.hpp"
+#include "Base.hpp"
 
 class manager;
 
@@ -69,9 +69,9 @@ private:
 	std::vector<block*> blocks;
 	bool haveAll{false};
 	bool uptodate{false};
-	int fd;
 	int lock;
 public:
+	int fd;
 	file(stdobj* parent,std::string _path);
 	//file(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache);
 	file(stdobj* parent,std::string _path,struct stat &_st);

@@ -10,28 +10,28 @@ using namespace std;
 #define CONFIGPATH "/home/yonde/Documents/blockfs/build/config/cacheconfig"
 
 int loadoption(string &host,string &username,string &password,string &cache_dir){
-	int index;
-	string line,key;
-	string ConfigPath = CONFIGPATH;
-	std::ifstream ifs;
-	ifs.open(ConfigPath);
-	if(!ifs){
-		std::cerr << "open sshconfig failed" << std::endl;
+    int index;
+    string line,key;
+    string ConfigPath = CONFIGPATH;
+    std::ifstream ifs;
+    ifs.open(ConfigPath);
+    if(!ifs){
+	std::cerr << "open sshconfig failed" << std::endl;
+    }
+    while(std::getline(ifs,line)){
+	index = line.find(" ");
+	key=line.substr(0,line.find(" "));
+	if(key=="host"){
+		host = line.substr(index+1);
+	}else if(key=="username"){
+		username = line.substr(index+1);
+	}else if(key=="password"){
+		password = line.substr(index+1);
+	}else if(key=="cachedir"){
+		cache_dir = line.substr(index+1);
 	}
-	while(std::getline(ifs,line)){
-		index = line.find(" ");
-		key=line.substr(0,line.find(" "));
-		if(key=="host"){
-			host = line.substr(index+1);
-		}else if(key=="username"){
-			username = line.substr(index+1);
-		}else if(key=="password"){
-			password = line.substr(index+1);
-		}else if(key=="cachedir"){
-			cache_dir = line.substr(index+1);
-		}
-	}
-	return 0;
+    }
+    return 0;
 }
 
 

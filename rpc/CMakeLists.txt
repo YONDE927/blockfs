@@ -17,7 +17,10 @@
 # See cmake_externalproject/CMakeLists.txt for all-in-one cmake build
 # that automatically builds all the dependencies before building helloworld.
 
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.22.1)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_FLAGS "-Wall -ggdb")
 
 project(UserTaste C CXX)
 
@@ -56,9 +59,17 @@ target_link_libraries(ut_grpc_proto
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF})
 
+include_directories("./include")
+
+add_library(sftp STATIC ./src/Sftp.cpp)
+target_link_libraries(sftp PRIVATE ssh)
+
+add_library(cache STATIC ./src/Cache.cpp)
+target_link_libraries(cache mariadbcpp)
+
 add_executable(usertaste_client "usertaste_client.cpp")
 target_link_libraries(usertaste_client ut_grpc_proto ${_REFLECTION}
-    ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF})
+    ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} sftp cache)
 
 # Targets greeter_[async_](client|server)
 #foreach(_target

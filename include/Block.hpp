@@ -13,9 +13,9 @@
 #include <string>
 #include "Sftp.hpp"
 #include "Cache.hpp"
-#include "base.hpp"
+#include "Base.hpp"
 
-#define BLOCK_SIZE 512
+#define BLOCK_SIZE 1024
 
 class manager;
 class file;

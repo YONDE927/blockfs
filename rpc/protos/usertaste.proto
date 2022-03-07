@@ -19,12 +19,11 @@ message Stat {
 }
 
 message Want {
-    string something = 1;
-    int32 size = 2;
+    string most_used_file = 1;
+    int32 prefetch_num = 2;
 }
 
 message File {
     string path = 1;
-    int32 size = 2;
 } 
 

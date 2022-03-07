@@ -13,28 +13,30 @@ ELSE()
 	project(blockfs)
 ENDIF()
 
-add_library(sftp STATIC Sftp.cpp)
+include_directories("./include")
+
+add_library(sftp STATIC ./src/Sftp.cpp)
 target_link_libraries(sftp PRIVATE ssh)
 
-add_library(cache STATIC Cache.cpp)
+add_library(cache STATIC ./src/Cache.cpp)
 target_link_libraries(cache mariadbcpp)
 
-add_library(forecache STATIC forecache.cpp)
+add_library(forecache STATIC ./src/Forecache.cpp)
 target_link_libraries(forecache pthread)
 
-add_library(block STATIC Block.cpp)
+add_library(block STATIC ./src/Block.cpp)
 
-add_library(entry STATIC Entry.cpp)
+add_library(entry STATIC ./src/Entry.cpp)
 target_link_libraries(entry PRIVATE block)
 
-add_library(manager STATIC Manager.cpp)
+add_library(manager STATIC ./src/Manager.cpp)
 target_link_libraries(manager PRIVATE forecache)
 
-add_executable(test test.cpp)
+add_executable(test ./src/Test.cpp)
 target_link_libraries(test sftp entry manager cache)
 
-add_executable(reset reset.cpp)
+add_executable(reset ./src/Reset.cpp)
 target_link_libraries(reset mariadbcpp)
 
-add_executable(${PROJECT_NAME} blockfs.cpp)
+add_executable(${PROJECT_NAME} ./src/Blockfs.cpp)
 target_link_libraries(${PROJECT_NAME} fuse3 sftp entry manager cache)
