@@ -1,0 +1,29 @@
+// This prot file is for blockfs
+// UserTaste rpc give clients what they should download ahead.
+syntax = "proto3";
+
+package usertaste;
+
+service UserTaste {
+    rpc init(User) returns (Stat) {}
+    rpc greet(Want) returns (Stat) {}
+    rpc listfile(Want) returns (stream File) {}
+}
+
+message User {
+    string root = 1;
+}
+
+message Stat {
+    int32 status = 1;
+}
+
+message Want {
+    string most_used_file = 1;
+    int32 prefetch_num = 2;
+}
+
+message File {
+    string path = 1;
+} 
+
