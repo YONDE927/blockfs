@@ -30,8 +30,8 @@ public:
 	~block();
 	int download();
 	int upload();
-	int bread(char* buf,int offset,int size,bool uptodate,int cachefd);
-	int bwrite(const char* buf,int offset,int size,bool uptodate,int cachefd);
+	int bread(char* buf,int offset,int size,bool uptodate);
+	int bwrite(const char* buf,int offset,int size,bool uptodate);
 	int lload(int fd); /* ブロックをローカルストレージから読み*/
 	int ldown(int fd); /* ブロックをローカルストレージへ書き*/
 };

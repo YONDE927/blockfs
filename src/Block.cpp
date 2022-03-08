@@ -45,17 +45,20 @@ int block::upload(){
     }
 }
 
-int block::bread(char* buf,int offset,int size,bool uptodate,int cache_flag){
+int block::bread(char* buf,int offset,int size,bool uptodate){
     LOG_TRACE("Called against %s %d block",((file*)parent)->path.c_str(),index);
-    int dsize,nread;
+    int dsize,nread,rc;
     BlockCache bc;
     //load
     if(data==NULL){
 	//最新かどうかの確認がうまくできていない。BlockCacheのmtimeの型がおかしい。
 	//if(uptodate){
-	    //if((((manager*)base)->p_cache->find_block(((file*)parent)->path,index,bc)==0)){
-	if(cache_flag){
-	    this->lload(((file*)parent)->fd);
+	if((((manager*)base)->p_cache->find_block(((file*)parent)->path,index,bc)==0)){
+	    rc = this->lload(((file*)parent)->fd);
+	    if(rc<0){
+		LOG_ERROR("Failed to local load against %s %d block",((file*)parent)->path.c_str(),index);
+		return -1;
+	    }
 	}else{
 	    dsize = this->download();
 	    //cache
@@ -88,14 +91,18 @@ int block::bread(char* buf,int offset,int size,bool uptodate,int cache_flag){
     return nread;
 }
 
-int block::bwrite(const char* buf,int offset,int size,bool uptodate,int cachefd){
+int block::bwrite(const char* buf,int offset,int size,bool uptodate){
     LOG_TRACE("Called against %s %d block",((file*)parent)->path.c_str(),index);
-    int nwritten,dsize;
+    int nwritten,dsize,rc;
     BlockCache bc;
     //load
     if(data==NULL){
 	if(uptodate & (((manager*)base)->p_cache->find_block(((file*)parent)->path,index,bc)==0)){
-	    this->lload(cachefd);
+	    rc=this->lload(((file*)parent)->fd);
+	    if(rc<0){
+		LOG_ERROR("Failed to local load against %s %d block",((file*)parent)->path.c_str(),index);
+		return -1;
+	    }
 	}else{
 	    dsize = this->download();
 	    //write cachefile later
@@ -122,7 +129,7 @@ int block::bwrite(const char* buf,int offset,int size,bool uptodate,int cachefd)
 	nwritten = -1;
     }
     //cache write
-    if(this->ldown(cachefd)<0){
+    if(this->ldown(((file*)parent)->fd)<0){
 	LOG_ERROR("Failed to local write against %s %d block",((file*)parent)->path.c_str(),index);
 	return -1;
     }

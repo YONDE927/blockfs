@@ -151,7 +151,8 @@ int sftp::fulldownload(std::string from, std::string dest){
     std::string p = add_path(sftproot,from);
     file = sftp_open(m_sftp,p.c_str(), O_RDONLY,0);
     if(file == NULL){
-	LOG_ERROR("Can't open %s,%s",p.c_str(),ssh_get_error(m_sftp));
+	LOG_ERROR("Can't open %s,[code]=%d",p.c_str(),sftp_get_error(m_sftp));
+	return -1;
     }
     LOG_DEBUG("Sftp opened %s",p.c_str());
     ofs.open(dest,std::ios_base::out|std::ios_base::binary|std::ios_base::trunc);
@@ -184,6 +185,10 @@ int sftp::download(std::string path,char* buf,int offset,int size){
     std::string p = add_path(sftproot,path);
     std::lock_guard<std::mutex> lock(mtx);
     file = sftp_open(m_sftp,p.c_str(), O_RDONLY,0);
+    if(file == NULL){
+	LOG_ERROR("Can't open %s,[code]=%d",p.c_str(),sftp_get_error(m_sftp));
+	return -1;
+    }
     if(sftp_seek(file, offset)<0){
 	LOG_ERROR("Failed to sftp_seek of %s",path.c_str());
 	sftp_close(file);
@@ -206,6 +211,10 @@ int sftp::upload(std::string path,char* buf,int offset,int size){
     std::string p = add_path(sftproot,path);
     std::lock_guard<std::mutex> lock(mtx);
     file = sftp_open(m_sftp,p.c_str(),O_WRONLY,0);
+    if(file == NULL){
+	LOG_ERROR("Can't open %s,[code]=%d",p.c_str(),sftp_get_error(m_sftp));
+	return -1;
+    }
     if(sftp_seek(file, offset)<0){
 	LOG_ERROR("Failed to sftp_seek of %s",path.c_str());
 	sftp_close(file);

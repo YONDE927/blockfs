@@ -15,6 +15,8 @@
 #include <string>
 #include <filesystem>
 
+#define BLOCK_SIZE 1024
+
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
@@ -67,14 +69,16 @@ public:
 	p_utc = _p_utc;
     }
     void loop(){
-	std::cout << "loop start" << std::endl;
+	LOG_INFO("loop start");
 	while(true){
 	    this->loader();
 	    sleep(10);
 	}
     }
     void loader(){
-	std::cout << "loader called" << std::endl;
+	LOG_INFO("loader start");
+	int rc,block_num;
+	Stat st;
 	std::list<std::string> reserved_path;
 	std::string most_used_path = p_cache->find_max("path");
 	std::string dir_path = std::filesystem::path(most_used_path).parent_path();
@@ -83,22 +87,35 @@ public:
 
 	reserved_path = p_utc->ListFile(remote_path,10);
 	for(auto i = reserved_path.begin();i != reserved_path.end(); i++){
-	    std::cout << "file is " << *i << std::endl;
 	    std::string tmp = i->substr(dir_len);
 	    std::string dest = p_cache->get_location(tmp); 
 	    if(std::filesystem::exists(dest)){
 		std::cout << " already exist " << dest  << std::endl;
 		continue;
 	    }
-	    std::cout << *i << " >> " << dest << std::endl;
-	    p_sftp->fulldownload(*i,dest);	
+	    rc = p_sftp->fulldownload(tmp,dest);	
+	    if(rc<0){
+		LOG_ERROR("loading %s failed",tmp.c_str());
+	    }
+	    //add to cachedb
+	    //add stat
+	    if(p_sftp->getstat(tmp, st)<0){
+		LOG_ERROR("Failed to get block size",tmp.c_str());
+		continue;
+	    }
+	    p_cache->add_stat(tmp,st.st.st_size,st.st.st_mtime);
+	    //add blocks
+	    block_num = (st.st.st_size / BLOCK_SIZE) + 1;
+    	    for(int i=0;i<block_num;i++){
+		p_cache->add_block(tmp,i);
+    	    }
 	}
     }
 };
 
 int main()
 {
-    Logger::Set_Priority(DebugPriority);
+    Logger::Set_Priority(TracePriority);
     std::string target = "localhost:50051";
     UserTasteClient utc(grpc::CreateChannel(target, grpc::InsecureChannelCredentials()));
     Prefetcher pft = Prefetcher(&utc);

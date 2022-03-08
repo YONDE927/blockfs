@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "-Wall -ggdb")
+set(CMAKE_CXX_FLAGS "-ggdb")
 
 project(UserTaste C CXX)
 
@@ -67,7 +67,7 @@ target_link_libraries(sftp PRIVATE ssh)
 add_library(cache STATIC ./src/Cache.cpp)
 target_link_libraries(cache mariadbcpp)
 
-add_executable(usertaste_client "usertaste_client.cpp")
+add_executable(usertaste_client ./src/usertaste_client.cpp)
 target_link_libraries(usertaste_client ut_grpc_proto ${_REFLECTION}
     ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} sftp cache)
 

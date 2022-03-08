@@ -237,7 +237,7 @@ int file::fread(char* buf,int offset,int size){
 	if(oread < cache_st.st_size){
 	    cache_flag=1;
 	}
-	nread=blocks[ind]->bread(buf,block_offset,size,uptodate,cache_flag);
+	nread=blocks[ind]->bread(buf,block_offset,size,uptodate);
 	if(block_offset>0){
 		block_offset=0;	
 	}
@@ -269,7 +269,7 @@ int file::fwrite(const char* buf,int offset,int size){
 		blocks.push_back(b);
 	    }
 	}
-	nwritten=blocks[ind]->bwrite(buf,block_offset,size,uptodate,fd);
+	nwritten=blocks[ind]->bwrite(buf,block_offset,size,uptodate);
 	if(nwritten<0){
 	    LOG_ERROR("Failed to write in %dth block of %s",ind,path.c_str());
 	    break;
