@@ -11,6 +11,12 @@ attribute::attribute(stdobj* parent,std::string path):stdobj(parent){
     name = p.filename();
     st = new struct stat;
     this->download();
+    file_type=0;
+    if(S_ISREG(st->st_mode)){
+	file_type=1;
+    }else if(S_ISDIR(st->st_mode)){
+	file_type=2;
+    }
 }
 
 attribute::attribute(stdobj* parent,std::string path,struct stat &_st):stdobj(parent){
@@ -20,6 +26,12 @@ attribute::attribute(stdobj* parent,std::string path,struct stat &_st):stdobj(pa
     name = p.filename();
     st = new struct stat;
     *st = _st;
+    file_type=0;
+    if(S_ISREG(st->st_mode)){
+	file_type=1;
+    }else if(S_ISDIR(st->st_mode)){
+	file_type=2;
+    }
 }
 
 attribute::~attribute(){
@@ -148,6 +160,7 @@ file::file(stdobj* parent,std::string _path): entry(parent,_path){
     flag=1;
 }
 
+//blocksをblock*の配列に変更するlistを使うと毎回初期化が入るのでread時にblockを初期化するようにする。理由はgetattrでいちいちblockを生成するのはもったいないから。
 file::file(stdobj* parent,std::string _path,struct stat &_st): entry(parent,_path,_st){
     LOG_TRACE("Called against %s",_path.c_str());
     int block_num;
@@ -164,7 +177,7 @@ file::~file(){
     LOG_TRACE("Called against %s",this->path.c_str());
     std::vector<block*>::iterator itr;
     for(itr=blocks.begin();itr!=blocks.end();++itr){
-	    delete *itr;
+	delete *itr;
     }
 }
 

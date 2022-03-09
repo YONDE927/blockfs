@@ -72,7 +72,6 @@ int block::bread(char* buf,int offset,int size,bool uptodate){
 	    //p_cache->add_block(*p_path,index);
 	}
     }
-    
     //read
     if(offset>BLOCK_SIZE){
 	LOG_ERROR("Offset is over BLOCK_SIZE against %s %d block",((file*)parent)->path.c_str(),index);

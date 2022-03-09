@@ -28,6 +28,7 @@ int b_getattr(const char *path,struct stat *stbuf,struct fuse_file_info *fi){
     LOG_INFO("Called against %s",path);
     struct stat st;
     entry* et;
+    //getattrではlookupしなくて、直接読み込んでもいいのでは？
     et=p_manager->lookup(std::string(path));
     if(et==NULL){
 	LOG_ERROR("Fail to getattr %s",path);
@@ -42,7 +43,8 @@ int b_open(const char *path,struct fuse_file_info *fi){
     file* et;
     et=(file*)p_manager->lookup(std::string(path));
     if(et==NULL){
-	return -ENOENT;
+	LOG_ERROR("no space for file on memory");
+	return ENOMEM;
     }
     et->fopen();
     return 0;
@@ -53,6 +55,10 @@ int b_read(const char *path,char *buf,size_t size,off_t offset,struct fuse_file_
     int nread;
     file* et;
     et=(file*)p_manager->lookup(std::string(path));
+    if(et==NULL){
+	LOG_ERROR("no space for file on memory");
+	return ENOMEM;
+    }
     nread=et->fread(buf,offset,size);
     if(nread<0){
 	LOG_ERROR("Failed to read %s",path);
@@ -66,6 +72,10 @@ int b_write(const char *path,const char *buf,size_t size,off_t offset,struct fus
     int nwritten;
     file* et;
     et=(file*)p_manager->lookup(std::string(path));
+    if(et==NULL){
+	LOG_ERROR("no space for file on memory");
+	return ENOMEM;
+    }
     nwritten=et->fwrite(buf,offset,size);
     if(nwritten<0){
 	LOG_ERROR("Failed to write %s",path);
@@ -78,6 +88,10 @@ int b_close(const char *path,struct fuse_file_info *fi){
     LOG_INFO("Called against %s",path);
     file* et;
     et=(file*)p_manager->lookup(std::string(path));
+    if(et==NULL){
+	LOG_ERROR("no space for file on memory");
+	return ENOMEM;
+    }
     et->fclose();
     return 0;
 }

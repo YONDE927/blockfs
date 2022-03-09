@@ -21,6 +21,7 @@ private:
 	sftp* p_sftp;
 	struct stat* st;
 public:
+	int file_type;
 	std::string path;
 	std::string name;
 	attribute(stdobj* parent,std::string path);
@@ -71,7 +72,7 @@ private:
 	bool uptodate{false};
 	int lock;
 public:
-	int fd;
+	int fd{0};
 	file(stdobj* parent,std::string _path);
 	//file(stdobj* parent,std::string _path,sftp *_p_sftp,cache *_p_cache);
 	file(stdobj* parent,std::string _path,struct stat &_st);
