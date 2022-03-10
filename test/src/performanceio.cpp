@@ -2,15 +2,19 @@
 #include <fstream>
 #include <string>
 #include <list>
-#include <ctime>
-#include <time.h>
-#include <unistd.h>
+#include <chrono>
+#include <filesystem>
 
 using namespace std;
 
 
+struct info{
+    double time;
+    double size;
+};
+
 //ファイルを読み込み、list<string>に格納。
-int load(string path,list<string> &listbuf)
+long load(string path,list<string> &listbuf)
 {
 	list<string> output;
 	string buf;
@@ -25,31 +29,42 @@ int load(string path,list<string> &listbuf)
 		line++;
 		listbuf.push_back(buf);
 	}
-	return 0;
+	return filesystem::file_size(path);
 }
 
-int tester(list<string> loadschedule)
+info tester(list<string> loadschedule)
 {
-	time_t t;
+	info output{0,0};
+	long x,size{0};
 	string enter;
 	list<string> readbuf;
 	//loadscheduleの順で読み込む,最初のファイルを読んで先読みキャッシュを待つ時間を設ける。
 	//最初のファイル
 	if(load(loadschedule.front(),readbuf)<0){
-		cout << "load " << loadschedule.front() << endl;
-		return 0;
+		cout << "load " << loadschedule.front() << " fail"<< endl;
+		return output;
 	}
 	loadschedule.pop_front();
 	//テスターにキャッシュが溜まったことを確認させる
 	cout << "キャッシュが貯まったらEnterを押してください。";
-	cin >> enter;
+	while(cin.get()!='\n'){
+	    continue;
+	}
 	//現在時刻をセットし、リストのファイルを順次読み込む。
-	t = time(NULL);
+	auto start = chrono::high_resolution_clock::now();
 	for(auto itr=loadschedule.begin();itr!=loadschedule.end();itr++){
-		load(*itr,readbuf);
+	    x = load(*itr,readbuf);
+	    if(x<0){
+		cout << "load " << *itr << " fail"<< endl;
+		return output;
+	    }
+	    size += x;
 	}
 	//読み込み後の時刻との差分を返す。
-	return t-time(NULL);
+	auto finish = chrono::high_resolution_clock::now();
+	output.time = std::chrono::duration_cast<chrono::nanoseconds>(finish-start).count();
+	output.size = size;
+	return output;
 }
 
 int main(int argc,char* argv[])
@@ -58,7 +73,7 @@ int main(int argc,char* argv[])
 	list<string> randomschedule;
 	list<string> readbuf;
 	string enter;
-	int ss,rs;
+	info ss,rs;
 	
 	//引数が足りない
 	if(argc < 3){
@@ -76,6 +91,9 @@ int main(int argc,char* argv[])
 	//各リストに対してテスト
 	ss = tester(similarschedule);
 	rs = tester(randomschedule);
-	cout << "similar: " << ss << "	random: " << rs << endl;
+	cout << "similar: [" << ss.time << " ns / " << ss.size << "byte = "
+	    << ss.time / ss.size << "ns/bytes]" << endl;
+	cout << "random: [" << rs.time << " ns / " << rs.size << "byte = "
+	    << rs.time / rs.size << "ns/bytes]" << endl;
 	return 0;
 }
