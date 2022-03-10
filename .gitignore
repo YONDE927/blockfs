@@ -38,3 +38,5 @@ rpc/build/*
 rpc/__pycache__
 rpc/.cache
 *.swp
+
+test/build/*

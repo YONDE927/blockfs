@@ -69,47 +69,47 @@ public:
 	p_utc = _p_utc;
     }
     void loop(){
-	LOG_INFO("loop start");
-	while(true){
-	    this->loader();
-	    sleep(10);
-	}
+		LOG_INFO("loop start");
+		while(true){
+		    this->loader();
+		    sleep(5);
+		}
     }
     void loader(){
-	LOG_INFO("loader start");
-	int rc,block_num;
-	Stat st;
-	std::list<std::string> reserved_path;
-	std::string most_used_path = p_cache->find_max("path");
-	std::string dir_path = std::filesystem::path(most_used_path).parent_path();
-	std::string remote_path = p_sftp->sftproot + most_used_path;
-	int dir_len = p_sftp->sftproot.size();
+		LOG_INFO("loader start");
+		int rc,block_num;
+		Stat st;
+		std::list<std::string> reserved_path;
+		std::string most_used_path = p_cache->find_max("path");
+		std::string dir_path = std::filesystem::path(most_used_path).parent_path();
+		std::string remote_path = p_sftp->sftproot + most_used_path;
+		int dir_len = p_sftp->sftproot.size();
 
-	reserved_path = p_utc->ListFile(remote_path,10);
-	for(auto i = reserved_path.begin();i != reserved_path.end(); i++){
-	    std::string tmp = i->substr(dir_len);
-	    std::string dest = p_cache->get_location(tmp); 
-	    if(std::filesystem::exists(dest)){
-		std::cout << " already exist " << dest  << std::endl;
-		continue;
-	    }
-	    rc = p_sftp->fulldownload(tmp,dest);	
-	    if(rc<0){
-		LOG_ERROR("loading %s failed",tmp.c_str());
-	    }
-	    //add to cachedb
-	    //add stat
-	    if(p_sftp->getstat(tmp, st)<0){
-		LOG_ERROR("Failed to get block size",tmp.c_str());
-		continue;
-	    }
-	    p_cache->add_stat(tmp,st.st.st_size,st.st.st_mtime);
-	    //add blocks
-	    block_num = (st.st.st_size / BLOCK_SIZE) + 1;
-    	    for(int i=0;i<block_num;i++){
-		p_cache->add_block(tmp,i);
+		reserved_path = p_utc->ListFile(remote_path,10);
+		for(auto i = reserved_path.begin();i != reserved_path.end(); i++){
+		    std::string tmp = i->substr(dir_len);
+		    std::string dest = p_cache->get_location(tmp); 
+		    if(std::filesystem::exists(dest)){
+			std::cout << " already exist " << dest  << std::endl;
+			continue;
+		    }
+		    rc = p_sftp->fulldownload(tmp,dest);	
+		    if(rc<0){
+			LOG_ERROR("loading %s failed",tmp.c_str());
+		    }
+		    //add to cachedb
+		    //add stat
+		    if(p_sftp->getstat(tmp, st)<0){
+			LOG_ERROR("Failed to get block size",tmp.c_str());
+			continue;
+		    }
+		    p_cache->add_stat(tmp,st.st.st_size,st.st.st_mtime);
+		    //add blocks
+		    block_num = (st.st.st_size / BLOCK_SIZE) + 1;
+    		for(int i=0;i<block_num;i++){
+				p_cache->add_block(tmp,i);
     	    }
-	}
+		}
     }
 };
 
